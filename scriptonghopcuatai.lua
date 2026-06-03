@@ -32,7 +32,7 @@ Callback = function()
  MainTab:CreateButton({
     Name = "Teleport Menu",
     Callback = function()
-loadstring(game:HttpGet("http s://pastefy.app/2JPFITBm/raw"))()
+        loadstring(game:HttpGet("https://pastefy.app/2JPFITBm/raw"))()
 end 
 })
 BloxFruitsTab:CreateButton({
@@ -103,7 +103,7 @@ end
 MainTab:CreateButton({
     Name = "AFEM Max",
     Callback = function ()
-loadstring(game:HttpGet("https://pastefy.app/JsslxxA0/raw"))()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-AFEM-Max-Open-Alpha-50210"))()
 end 
 })
 MainTab:CreateSection("Troll player")
