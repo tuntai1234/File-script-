@@ -58,3 +58,9 @@ MainTab:CreateButton({
         loadstring(game:HttpGet("https://pastebin.com/raw/AnsfEGXy"))()
     end
 })
+MainTab:CreateButton({
+    Name = "Noclip",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
+    end
+})
