@@ -31,7 +31,7 @@ Callback = function()
  
  MainTab:CreateButton({
     Name = "Teleport Menu",
-    Callback = function ()
+    Callback = function()
 loadstring(game:HttpGet("http s://pastefy.app/2JPFITBm/raw"))()
 end 
 })
