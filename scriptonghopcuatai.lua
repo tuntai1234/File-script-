@@ -28,12 +28,7 @@ Callback = function()
         loadstring(game:HttpGet("https://pastefy.app/Kvy3Oi1Z/raw"))()
     end
 })
- MainTab:CreateButton({
-    Name = "Hitbox",
- Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))()
-    end
-})
+ 
 BloxFruitsTab:CreateButton({
     Name = "Quantum",
  Callback = function()
@@ -54,16 +49,12 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/fakekuri/Okhubhere/re
     end
 })
 
-MainTab:CreateButton({
-    Name = "Esp",
- Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/140060/scripts/Universal%20ESP.lua"))()
-    end
-})
+
 MainTab:CreateButton({
     Name = "click to tp",
  Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Click%20Teleport.lua"))()
+
+loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Click%20Teleport.txt"))()
     end
 })
 MainTab:CreateButton({
@@ -98,12 +89,15 @@ MainTab:CreateButton({
     end 
     })
 MainTab:CreateButton({
-    Name = "Ultimate Fling GUI",
-   Callback = function()
-       --[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-loadstring(game:HttpGet("https://raw.githubusercontent.com/K1LAS1K/Ultimate-Fling-GUI/main/flingscript.lua"))()
+    Name = "Spectator UI",
+    Callback = function ()
+loadstring(game:HttpGet("https://pastefy.app/NItddEld/raw"))()
+end 
+})
+MainTab:CreateButton({
+    Name = "AFEM Max",
+    Callback = function ()
+loadstring(game:HttpGet("https://pastefy.app/JsslxxA0/raw"))()
 end 
 })
 MainTab:CreateSection("Troll player")
@@ -114,5 +108,35 @@ MainTab:CreateButton({
 	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
 ]]
 loadstring(game:HttpGet("https://raw.githubusercontent.com/platinww/CrustyMain/refs/heads/main/universal/DropKick.lua"))()
+end 
+})
+
+
+
+MainTab:CreateSection("Hỗ trợ")
+MainTab:CreateButton({
+    Name = "Hitbox",
+ Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))()
+    end
+})
+MainTab:CreateButton({
+    Name = "Esp",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/140060/scripts/Universal%20ESP.lua"))()
+    end
+})
+local Main2Tab = Window:CreateTab("Build a ring farm", 4483362458)
+Main2Tab:CreateButton({
+    Name = "Lumin hub có key",
+    Callback = function ()
+loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/8da261b727dc63189ee28f426e37ffb2.lua"))()
+end 
+})
+Main2Tab:CreateButton({
+    Name = "Void Hub No key",
+    Callback = function ()
+loadstring(game:HttpGet("https://pastefy.app/SGy4snSo/raw"))()
+
 end 
 })
