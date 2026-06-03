@@ -29,6 +29,12 @@ Callback = function()
     end
 })
  
+ MainTab:CreateButton({
+    Name = "Teleport Menu",
+    Callback = function ()
+loadstring(game:HttpGet("http s://pastefy.app/2JPFITBm/raw"))()
+end 
+})
 BloxFruitsTab:CreateButton({
     Name = "Quantum",
  Callback = function()
@@ -54,7 +60,7 @@ MainTab:CreateButton({
     Name = "click to tp",
  Callback = function()
 
-loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Click%20Teleport.txt"))()
+loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
     end
 })
 MainTab:CreateButton({
