@@ -59,19 +59,14 @@ MainTab:CreateButton({
     end
 })
 MainTab:CreateButton({
-    Name = "Noclip",
- Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
-    end
-} 
-    MainTab:CreateButton({
-    Name = "click to Teleport",
+    Name = "click to tp",
  Callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Click%20Teleport.lua"))()
+    end
 })
 MainTab:CreateButton({
-    Name = "7yd7 emote",
+    Name = "nocilp",
  Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/s/69eb7c19da685847149709a5.lua"))()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
