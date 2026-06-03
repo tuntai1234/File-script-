@@ -1,7 +1,7 @@
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "GUI của Tài",
+    Name = "GUI Tổng hợp",
     LoadingTitle = "Đang tải...",
     LoadingSubtitle = "By Tài",
     ConfigurationSaving = {
