@@ -55,12 +55,23 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/fakekuri/Okhubhere/re
 MainTab:CreateButton({
     Name = "Esp",
  Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/AnsfEGXy"))()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/140060/scripts/Universal%20ESP.lua"))()
     end
 })
 MainTab:CreateButton({
     Name = "Noclip",
  Callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
+    end
+} 
+    MainTab:CreateButton({
+    Name = "click to Teleport",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Click%20Teleport.lua"))()
+})
+MainTab:CreateButton({
+    Name = "7yd7 emote",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/s/69eb7c19da685847149709a5.lua"))()
     end
 })
