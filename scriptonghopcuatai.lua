@@ -71,8 +71,14 @@ MainTab:CreateButton({
     end
 })
 MainTab:CreateButton({
-    Name = "7yd7 emote",
+    Name = "HÀNH ĐỘNG",
  Callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/s/69eb7c19da685847149709a5.lua"))()
     end
+})
+MainTab:CreateButton({
+    Name = "F3X",
+ Callback = function()
+        loadstring(game:GetObjects("rbxassetid://6695644299")[1].Source)()
+end
 })
