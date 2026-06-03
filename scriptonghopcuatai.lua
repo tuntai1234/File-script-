@@ -20,6 +20,7 @@ local BloxFruitsTab = Window:CreateTab("Blox Fruits", 4483362458)
     Title = "Description",
     Content = "Đây là script của Tai cũng sẽ là nơi chứa những script mới về nhiều tự game"
 })
+MainTab:CreateSection("Di chuyển")
  MainTab:CreateButton({
     Name = "Fly+speed",
  Info = "Đây là script kết hợp giữa fly và speed",
@@ -52,6 +53,7 @@ BloxFruitsTab:CreateButton({
 loadstring(game:HttpGet("https://raw.githubusercontent.com/fakekuri/Okhubhere/refs/heads/main/MainBloxFruit.lua"))()
     end
 })
+
 MainTab:CreateButton({
     Name = "Esp",
  Callback = function()
@@ -70,6 +72,7 @@ MainTab:CreateButton({
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
+    MainTab:CreateSection("-Giải trí-")   
 MainTab:CreateButton({
     Name = "HÀNH ĐỘNG",
  Callback = function()
@@ -103,6 +106,7 @@ MainTab:CreateButton({
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1LAS1K/Ultimate-Fling-GUI/main/flingscript.lua"))()
 end 
 })
+MainTab:CreateSection("Troll player")
 MainTab:CreateButton({
     Name = "The real drop kick",
     Callback = function ()
