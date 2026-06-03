@@ -82,3 +82,15 @@ MainTab:CreateButton({
         loadstring(game:GetObjects("rbxassetid://6695644299")[1].Source)()
 end
 })
+MainTab:CreateButton({
+    Name = "Dev",
+    Callback = function() 
+        loadstring(game:HttpGet("https://obj.wearedevs.net/216234/scripts/NDex%20V1.lua"))() 
+    end 
+    })
+MainTab:CreateButton({
+    Name = "Infinite Jump",
+    Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Infinite%20Jump.lua"))()
+    end 
+    })
