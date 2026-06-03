@@ -70,3 +70,9 @@ MainTab:CreateButton({
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
+MainTab:CreateButton({
+    Name = "7yd7 emote",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/s/69eb7c19da685847149709a5.lua"))()
+    end
+})
