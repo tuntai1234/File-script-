@@ -52,3 +52,10 @@ BloxFruitsTab:CreateButton({
 loadstring(game:HttpGet("https://raw.githubusercontent.com/fakekuri/Okhubhere/refs/heads/main/MainBloxFruit.lua"))()
     end
 })
+MainTab:CreateButton({
+    Name = "high  Jump",
+ Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/4SEZbKS0"))()
+        
+    end
+})
