@@ -1,0 +1,14 @@
+local points = 0
+local step = 0 
+local pointPerStep = 1 
+ 
+local function buocdi() step = step +1
+  points = points + pointPerStep
+  print("Bước: " .. steps .. "điểm : ".. points) end
+for i=1,10 do
+  buocdi(i)
+end 
+if points > 300 then 
+  print (" hơi nhỏ nhỉ")
+elseif  points < 300 then 
+  print ("ui mạnh thí") end 
