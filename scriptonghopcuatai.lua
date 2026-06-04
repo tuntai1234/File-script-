@@ -1,161 +1,83 @@
-local Fluent = "https://github.com/dawid-scripts/Fluent"
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Name = "GUI của Tài",
-    LoadingTitle = "Đang tải...",
-    LoadingSubtitle = "By Tài",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "TaiGUI",
-        FileName = "Config"
-    }
+    Title = "GUI Tổng hợp V2",
+    SubTitle = "Bấm F10 để bật gui",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 400),
+    Acrylic = true,
+    Theme = "Light",
+    MinimizeKey = Enum.KeyCode.F10
 })
 
-local HomeTab = Window:CreateTab("Home", 4483362458)
-local MainTab = Window:CreateTab("Main", 4483362458)
-
-local BloxFruitsTab = Window:CreateTab("Blox Fruits", 4483362458)
-
- HomeTab:CreateParagraph({
-    Title = "Description",
-    Content = "Đây là script của Tai cũng sẽ là nơi chứa những script mới về nhiều tự game"
+-- Tab Của Gui
+local MainTab = Window:AddTab({
+    Title = "Main",
+    Icon = "home"
 })
-MainTab:CreateSection("Di chuyển")
- MainTab:CreateButton({
-    Name = "Fly+speed",
- Info = "Đây là script kết hợp giữa fly và speed",
-Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/Kvy3Oi1Z/raw"))()
-    end
+
+
+local Main2Tab = Window:AddTab({
+    Title = "Player",
+    Icon = "user"
 })
- 
- MainTab:CreateButton({
-    Name = "Teleport Menu",
+
+-- Phân nhóm
+MainTab:AddSection("Di chuyển")
+
+-- Nút để bật script 
+MainTab:AddButton({
+    Title = "Fly gui ",
+    Description = "Đây là script giúp bạn bay lên ",
     Callback = function()
-loadstring(game:HttpGet("http s://pastefy.app/2JPFITBm/raw"))()
-end 
-})
-BloxFruitsTab:CreateButton({
-    Name = "Quantum",
- Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua"))()
-    end
-})
-BloxFruitsTab:CreateButton({
-    Name = "RealKidhub",
- Callback = function()
-       loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/main.lua"))() 
-    end
-})
-BloxFruitsTab:CreateButton({
-    Name = "Ok Hub",
- Callback = function()
-       getgenv().team = "Pirates" -- Marines
-loadstring(game:HttpGet("https://raw.githubusercontent.com/fakekuri/Okhubhere/refs/heads/main/MainBloxFruit.lua"))()
-    end
-})
 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
+})
+MainTab:AddButton({
+    Title = "Fly gui ",
+    Description = "Đây là 1 menu khiến bạn có thể dịch chuyển tới nơi đã lưu",
+    Callback = function()
 
-MainTab:CreateButton({
-    Name = "click to tp",
+loadstring("http s://pastefy.app/2JPFITBm/raw")
+    end
+})
+MainTab:AddButton({
+    Title = "click to tp",
+    Description = " script sẽ cho bạn tool khi bấm vào 1 nào đó sẽ tp bạn dênd đó ",
  Callback = function()
 
 loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
     end
 })
-MainTab:CreateButton({
-    Name = "nocilp",
+MainTab:AddButton({
+    Title = "nocilp",
+Description = "Script giúp bạn đi xuyên vật thể",
  Callback = function()
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
-    MainTab:CreateSection("-Giải trí-")   
-MainTab:CreateButton({
-    Name = "HÀNH ĐỘNG",
- Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/s/69eb7c19da685847149709a5.lua"))()
-    end
+
+
+
+
+
+
+
+-- Paragraph
+Main2Tab:AddParagraph({
+    Title = "Thông tin",
+    Content = "Đây là đoạn mô tả."
 })
-MainTab:CreateButton({
-    Name = "F3X",
- Callback = function()
-        loadstring(game:GetObjects("rbxassetid://6695644299")[1].Source)()
-end
-})
-MainTab:CreateButton({
-    Name = "Dev",
-    Callback = function() 
-        loadstring(game:HttpGet("https://obj.wearedevs.net/216234/scripts/NDex%20V1.lua"))() 
-    end 
-    })
-MainTab:CreateButton({
-    Name = "Infinite Jump",
+
+-- Tab Player
+PlayerTab:AddSection("Player")
+
+PlayerTab:AddButton({
+    Title = "Test Player",
     Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Infinite%20Jump.lua"))()
-    end 
-    })
-MainTab:CreateButton({
-    Name = "Spectator UI",
-    Callback = function ()
-loadstring(game:HttpGet("https://pastefy.app/NItddEld/raw"))()
-end 
-})
-MainTab:CreateButton({
-    Name = "AFEM Max",
-    Callback = function ()
-loadstring(game:HttpGet("https://pastefy.app/JsslxxA0/raw"))()
-end 
-})
-MainTab:CreateSection("Troll player")
-MainTab:CreateButton({
-    Name = "The real drop kick",
-    Callback = function ()
-        --[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-loadstring(game:HttpGet("https://raw.githubusercontent.com/platinww/CrustyMain/refs/heads/main/universal/DropKick.lua"))()
-end 
-})
-MainTab:CreateButton({
-    Name = "Fake Lag",
-    Callback = function ()
-loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Fake-Lag-Panel-228035"))()
-end 
-})
-
-
-
-MainTab:CreateSection("Hỗ trợ")
-MainTab:CreateButton({
-    Name = "Hitbox",
- Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))()
+        print("Player Button")
     end
 })
-MainTab:CreateButton({
-    Name = "Esp",
- Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/140060/scripts/Universal%20ESP.lua"))()
-    end
-})
-MainTab:CreateButton({
-    Name = "Free cam",
-    Callback = function ()
-loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Freecam-script-by-claude-ai-123507"))()
-end 
-})
 
-local Main2Tab = Window:CreateTab("Build a ring farm", 4483362458)
-Main2Tab:CreateButton({
-    Name = "Lumin hub có key",
-    Callback = function ()
-loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/8da261b727dc63189ee28f426e37ffb2.lua"))()
-end 
-})
-Main2Tab:CreateButton({
-    Name = "Void Hub No key",
-    Callback = function ()
-loadstring(game:HttpGet("https://pastefy.app/SGy4snSo/raw"))()
-
-end 
-})
+Window:SelectTab(1)})
