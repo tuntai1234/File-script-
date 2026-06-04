@@ -1,7 +1,7 @@
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "GUI Tổng hợp",
+    Name = "GUI của Tài",
     LoadingTitle = "Đang tải...",
     LoadingSubtitle = "By Tài",
     ConfigurationSaving = {
@@ -32,7 +32,7 @@ Callback = function()
  MainTab:CreateButton({
     Name = "Teleport Menu",
     Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/2JPFITBm/raw"))()
+loadstring(game:HttpGet("http s://pastefy.app/2JPFITBm/raw"))()
 end 
 })
 BloxFruitsTab:CreateButton({
@@ -103,7 +103,7 @@ end
 MainTab:CreateButton({
     Name = "AFEM Max",
     Callback = function ()
-loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-AFEM-Max-Open-Alpha-50210"))()
+loadstring(game:HttpGet("https://pastefy.app/JsslxxA0/raw"))()
 end 
 })
 MainTab:CreateSection("Troll player")
@@ -117,11 +117,12 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/platinww/CrustyMain/r
 end 
 })
 MainTab:CreateButton({
-    Name = "Fake lag",
+    Name = "Fake Lag",
     Callback = function ()
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Fake-Lag-Panel-228035"))()
-		end
-	})
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Fake-Lag-Panel-228035"))()
+end 
+})
+
 
 
 MainTab:CreateSection("Hỗ trợ")
@@ -137,6 +138,13 @@ MainTab:CreateButton({
         loadstring(game:HttpGet("https://obj.wearedevs.net/140060/scripts/Universal%20ESP.lua"))()
     end
 })
+MainTab:CreateButton({
+    Name = "Free cam",
+    Callback = function ()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Freecam-script-by-claude-ai-123507"))()
+end 
+})
+
 local Main2Tab = Window:CreateTab("Build a ring farm", 4483362458)
 Main2Tab:CreateButton({
     Name = "Lumin hub có key",
