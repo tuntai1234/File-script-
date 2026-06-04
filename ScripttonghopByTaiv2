@@ -59,10 +59,11 @@ Description = "Script giúp bạn đi xuyên vật thể",
 })
 MainTab:AddSection("Giải trí")
 MainTab:AddButton({
-    Title = "Nope Name",
-Description = "đừng bấm vào",
+    Title = "7yd7",
+Description = "Script này giúp bạn thực hiện hành động  người khác có thể thấy",
  Callback = function()
-        --
+        
+loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Hub/refs/heads/Branch/GUIS/Emotes.lua"))()
     end
 })
 
