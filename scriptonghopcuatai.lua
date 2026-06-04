@@ -116,7 +116,12 @@ MainTab:CreateButton({
 loadstring(game:HttpGet("https://raw.githubusercontent.com/platinww/CrustyMain/refs/heads/main/universal/DropKick.lua"))()
 end 
 })
-
+MainTab:CreateButton({
+    Name = "Fake lag",
+    Callback = function ()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Fake-Lag-Panel-228035"))()
+		end
+	})
 
 
 MainTab:CreateSection("Hỗ trợ")
