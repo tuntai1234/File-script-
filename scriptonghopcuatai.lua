@@ -1,6 +1,6 @@
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Fluent = "https://github.com/dawid-scripts/Fluent"
 
-local Window = Rayfield:CreateWindow({
+local Window = Fluent:CreateWindow({
     Name = "GUI của Tài",
     LoadingTitle = "Đang tải...",
     LoadingSubtitle = "By Tài",
