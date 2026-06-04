@@ -4,9 +4,9 @@ local Window = Fluent:CreateWindow({
     Title = "GUI Tổng hợp V2",
     SubTitle = "Bấm F10 để bật gui",
     TabWidth = 160,
-    Size = UDim2.fromOffset(580, 400),
+    Size = UDim2.fromOffset(400, 400),
     Acrylic = true,
-    Theme = "Light",
+    Theme = "Dark",
     MinimizeKey = Enum.KeyCode.F10
 })
 
@@ -35,7 +35,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/
     end
 })
 MainTab:AddButton({
-    Title = "Fly gui ",
+    Title = "Teleport menu",
     Description = "Đây là 1 menu khiến bạn có thể dịch chuyển tới nơi đã lưu",
     Callback = function()
 
