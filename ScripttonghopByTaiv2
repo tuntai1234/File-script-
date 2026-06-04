@@ -57,7 +57,14 @@ Description = "Script giúp bạn đi xuyên vật thể",
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
-
+MainTab:AddSection("Giải trí")
+MainTab:AddButton({
+    Title = "Nope Name",
+Description = "đừng bấm vào",
+ Callback = function()
+        --
+    end
+})
 
 
 
