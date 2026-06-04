@@ -1,0 +1,83 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "GUI Tổng hợp V2",
+    SubTitle = "Bấm F10 để bật gui",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 400),
+    Acrylic = true,
+    Theme = "Light",
+    MinimizeKey = Enum.KeyCode.F10
+})
+
+-- Tab Của Gui
+local MainTab = Window:AddTab({
+    Title = "Main",
+    Icon = "home"
+})
+
+
+local Main2Tab = Window:AddTab({
+    Title = "Player",
+    Icon = "user"
+})
+
+-- Phân nhóm
+MainTab:AddSection("Di chuyển")
+
+-- Nút để bật script 
+MainTab:AddButton({
+    Title = "Fly gui ",
+    Description = "Đây là script giúp bạn bay lên ",
+    Callback = function()
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
+})
+MainTab:AddButton({
+    Title = "Fly gui ",
+    Description = "Đây là 1 menu khiến bạn có thể dịch chuyển tới nơi đã lưu",
+    Callback = function()
+
+loadstring("http s://pastefy.app/2JPFITBm/raw")
+    end
+})
+MainTab:AddButton({
+    Title = "click to tp",
+    Description = " script sẽ cho bạn tool khi bấm vào 1 nào đó sẽ tp bạn dênd đó ",
+ Callback = function()
+
+loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
+    end
+})
+MainTab:AddButton({
+    Title = "nocilp",
+Description = "Script giúp bạn đi xuyên vật thể",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
+    end
+})
+
+
+
+
+
+
+
+-- Paragraph
+Main2Tab:AddParagraph({
+    Title = "Thông tin",
+    Content = "Đây là đoạn mô tả."
+})
+
+-- Tab Player
+PlayerTab:AddSection("Player")
+
+PlayerTab:AddButton({
+    Title = "Test Player",
+    Callback = function()
+        print("Player Button")
+    end
+})
+
+Window:SelectTab(1)
