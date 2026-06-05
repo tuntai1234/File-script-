@@ -2,7 +2,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 
 local Window = Fluent:CreateWindow({
     Title = "GUI Tổng hợp V2",
-    SubTitle = "ờ...",
+    SubTitle = "F10 để bật script ",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 400),
     Acrylic = true,
