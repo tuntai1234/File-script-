@@ -2,7 +2,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 
 local Window = Fluent:CreateWindow({
     Title = "GUI Tổng hợp V2",
-    SubTitle = "F10 để bật script ",
+    SubTitle = "ờ...",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 400),
     Acrylic = true,
@@ -465,5 +465,331 @@ TeleTab:AddButton({
             Content = "→ " .. QT_SelPlayer,
             Duration = 3,
         })
+    end
+})
+
+-- ================================================================
+-- TAB ESP
+-- ================================================================
+local EspTab = Window:AddTab({
+    Title = "ESP",
+    Icon  = "eye"
+})
+
+local Camera    = workspace.CurrentCamera
+local espGui    = Instance.new("ScreenGui")
+espGui.Name     = "ESPGui"
+espGui.ResetOnSpawn = false
+espGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+espGui.Parent   = game:GetService("CoreGui")
+
+-- ESP state
+local espEnabled   = false
+local nameEnabled  = false
+local boxEnabled   = false
+local lineEnabled  = false
+local hlEnabled    = false
+
+local espColor     = Color3.fromRGB(255, 60, 60)
+local teamCheck    = false
+
+-- Lưu các object ESP theo player
+local espObjects = {}  -- [player] = { highlight, billboardGui, lineFrame }
+
+-- ── Helpers ─────────────────────────────────────────────────
+local function GetTeamColor(plr)
+    if plr.Team then return plr.TeamColor.Color end
+    return espColor
+end
+
+local function ShouldSkip(plr)
+    if plr == LocalPlayer then return true end
+    if teamCheck and plr.Team == LocalPlayer.Team then return true end
+    return false
+end
+
+-- ── Tạo ESP cho 1 player ────────────────────────────────────
+local function CreateESP(plr)
+    if espObjects[plr] then return end
+    local obj = {}
+
+    -- 1. Highlight
+    local hl = Instance.new("Highlight")
+    hl.Name            = "ESP_Highlight"
+    hl.FillColor       = espColor
+    hl.OutlineColor    = espColor
+    hl.FillTransparency    = 0.6
+    hl.OutlineTransparency = 0
+    hl.DepthMode       = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Enabled         = hlEnabled
+    obj.highlight      = hl
+
+    -- 2. BillboardGui (name + distance)
+    local bb = Instance.new("BillboardGui")
+    bb.Name            = "ESP_Billboard"
+    bb.AlwaysOnTop     = true
+    bb.Size            = UDim2.new(0, 120, 0, 40)
+    bb.StudsOffset     = Vector3.new(0, 3, 0)
+    bb.Enabled         = nameEnabled
+
+    local nameLbl = Instance.new("TextLabel", bb)
+    nameLbl.Name       = "NameLbl"
+    nameLbl.Size       = UDim2.new(1, 0, 0.6, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text       = plr.Name
+    nameLbl.TextColor3 = espColor
+    nameLbl.TextSize   = 13
+    nameLbl.Font       = Enum.Font.GothamBold
+    nameLbl.TextStrokeTransparency = 0
+    nameLbl.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+
+    local distLbl = Instance.new("TextLabel", bb)
+    distLbl.Name       = "DistLbl"
+    distLbl.Size       = UDim2.new(1, 0, 0.4, 0)
+    distLbl.Position   = UDim2.new(0, 0, 0.6, 0)
+    distLbl.BackgroundTransparency = 1
+    distLbl.Text       = ""
+    distLbl.TextColor3 = Color3.fromRGB(255, 220, 100)
+    distLbl.TextSize   = 11
+    distLbl.Font       = Enum.Font.Gotham
+    distLbl.TextStrokeTransparency = 0
+    distLbl.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+
+    obj.billboard  = bb
+    obj.nameLbl    = nameLbl
+    obj.distLbl    = distLbl
+
+    -- 3. Box ESP (Frame 2D)
+    local box = Instance.new("Frame", espGui)
+    box.Name               = "ESP_Box_"..plr.Name
+    box.BackgroundTransparency = 1
+    box.BorderSizePixel    = 0
+    box.Visible            = false
+    -- 4 viền
+    local function MkLine(parent)
+        local l = Instance.new("Frame", parent)
+        l.BackgroundColor3 = espColor
+        l.BorderSizePixel  = 0
+        return l
+    end
+    local bTop    = MkLine(box); bTop.Size    = UDim2.new(1,0,0,2); bTop.Position = UDim2.new(0,0,0,0)
+    local bBot    = MkLine(box); bBot.Size    = UDim2.new(1,0,0,2); bBot.Position = UDim2.new(0,0,1,-2)
+    local bLeft   = MkLine(box); bLeft.Size   = UDim2.new(0,2,1,0); bLeft.Position= UDim2.new(0,0,0,0)
+    local bRight  = MkLine(box); bRight.Size  = UDim2.new(0,2,1,0); bRight.Position=UDim2.new(1,-2,0,0)
+    obj.box = box
+
+    -- 4. Tracer line
+    local line = Instance.new("Frame", espGui)
+    line.Name              = "ESP_Line_"..plr.Name
+    line.BackgroundColor3  = espColor
+    line.BorderSizePixel   = 0
+    line.AnchorPoint       = Vector2.new(0.5, 0)
+    line.Visible           = false
+    obj.line = line
+
+    espObjects[plr] = obj
+
+    -- Pasang ke character
+    local function Attach(char)
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hl.Parent   = char
+            bb.Adornee  = hrp
+            bb.Parent   = hrp
+        end
+    end
+
+    Attach(plr.Character)
+    plr.CharacterAdded:Connect(Attach)
+end
+
+-- ── Hapus ESP 1 player ──────────────────────────────────────
+local function RemoveESP(plr)
+    local obj = espObjects[plr]
+    if not obj then return end
+    if obj.highlight and obj.highlight.Parent then obj.highlight:Destroy() end
+    if obj.billboard and obj.billboard.Parent then obj.billboard:Destroy() end
+    if obj.box  then obj.box:Destroy()  end
+    if obj.line then obj.line:Destroy() end
+    espObjects[plr] = nil
+end
+
+-- ── Update loop ─────────────────────────────────────────────
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    local myChar = LocalPlayer.Character
+    local myHRP  = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local camPos = Camera.CFrame.Position
+    local vp     = Camera.ViewportSize
+
+    for plr, obj in pairs(espObjects) do
+        if not plr or not plr.Parent then
+            RemoveESP(plr); continue
+        end
+        if ShouldSkip(plr) then continue end
+
+        local char = plr.Character
+        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+        local head = char and char:FindFirstChild("Head")
+
+        -- Khoảng cách
+        local dist = 0
+        if myHRP and hrp then
+            dist = math.floor((hrp.Position - myHRP.Position).Magnitude)
+        end
+
+        -- Update name/dist label
+        if obj.nameLbl then
+            obj.nameLbl.TextColor3 = teamCheck and GetTeamColor(plr) or espColor
+        end
+        if obj.distLbl and hrp then
+            obj.distLbl.Text = dist.."m"
+        end
+        if obj.billboard then
+            obj.billboard.Enabled = nameEnabled and hrp ~= nil
+        end
+        if obj.highlight then
+            obj.highlight.Enabled      = hlEnabled and char ~= nil
+            obj.highlight.FillColor    = teamCheck and GetTeamColor(plr) or espColor
+            obj.highlight.OutlineColor = teamCheck and GetTeamColor(plr) or espColor
+        end
+
+        -- Box + Line cần WorldToViewportPoint
+        if hrp and head then
+            local rootPos, rootVis = Camera:WorldToViewportPoint(hrp.Position)
+            local headPos, headVis = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.7,0))
+            local feetPos          = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,2.5,0))
+
+            if rootVis then
+                -- BOX
+                if boxEnabled then
+                    local h2d   = math.abs(headPos.Y - feetPos.Y)
+                    local w2d   = h2d * 0.55
+                    local cx    = rootPos.X
+                    local top   = headPos.Y
+                    obj.box.Position = UDim2.new(0, cx - w2d/2, 0, top)
+                    obj.box.Size     = UDim2.new(0, w2d, 0, h2d)
+                    -- update màu viền
+                    local col = teamCheck and GetTeamColor(plr) or espColor
+                    for _, f in ipairs(obj.box:GetChildren()) do
+                        if f:IsA("Frame") then f.BackgroundColor3 = col end
+                    end
+                    obj.box.Visible = true
+                else
+                    obj.box.Visible = false
+                end
+
+                -- LINE (từ giữa màn hình xuống)
+                if lineEnabled then
+                    local sx, sy = vp.X/2, vp.Y
+                    local ex, ey = rootPos.X, rootPos.Y
+                    local dx, dy = ex-sx, ey-sy
+                    local len    = math.sqrt(dx*dx+dy*dy)
+                    local angle  = math.deg(math.atan2(dy, dx)) + 90
+                    obj.line.Position  = UDim2.new(0, sx, 0, sy)
+                    obj.line.Size      = UDim2.new(0, 2, 0, len)
+                    obj.line.Rotation  = angle
+                    obj.line.BackgroundColor3 = teamCheck and GetTeamColor(plr) or espColor
+                    obj.line.Visible   = true
+                else
+                    obj.line.Visible = false
+                end
+            else
+                obj.box.Visible  = false
+                obj.line.Visible = false
+            end
+        end
+    end
+end)
+
+-- ── Quản lý player join/leave ────────────────────────────────
+local function OnPlayerAdded(plr)
+    if espEnabled and not ShouldSkip(plr) then
+        CreateESP(plr)
+    end
+end
+local function OnPlayerRemoving(plr)
+    RemoveESP(plr)
+end
+Players.PlayerAdded:Connect(OnPlayerAdded)
+Players.PlayerRemoving:Connect(OnPlayerRemoving)
+
+-- ── Toggle toàn bộ ESP ──────────────────────────────────────
+local function ToggleAllESP(val)
+    espEnabled = val
+    if val then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if not ShouldSkip(plr) then CreateESP(plr) end
+        end
+    else
+        for plr in pairs(espObjects) do RemoveESP(plr) end
+    end
+end
+
+-- ── Fluent UI ────────────────────────────────────────────────
+EspTab:AddSection("Bật tắt")
+
+EspTab:AddToggle("esp_master", {
+    Title    = "ESP",
+    Description = "Bật/tắt toàn bộ ESP",
+    Default  = false,
+    Callback = function(val)
+        ToggleAllESP(val)
+    end
+})
+
+EspTab:AddToggle("esp_highlight", {
+    Title    = "Highlight",
+    Description = "Tô màu nhân vật, nhìn xuyên tường",
+    Default  = false,
+    Callback = function(val)
+        hlEnabled = val
+    end
+})
+
+EspTab:AddToggle("esp_name", {
+    Title    = "Name + Distance",
+    Description = "Hiện tên và khoảng cách phía trên đầu",
+    Default  = false,
+    Callback = function(val)
+        nameEnabled = val
+    end
+})
+
+EspTab:AddToggle("esp_box", {
+    Title    = "Box ESP",
+    Description = "Vẽ khung vuông quanh player",
+    Default  = false,
+    Callback = function(val)
+        boxEnabled = val
+    end
+})
+
+EspTab:AddToggle("esp_line", {
+    Title    = "Tracer Line",
+    Description = "Vẽ đường từ màn hình tới player",
+    Default  = false,
+    Callback = function(val)
+        lineEnabled = val
+    end
+})
+
+EspTab:AddSection("Tùy chỉnh")
+
+EspTab:AddToggle("esp_team", {
+    Title    = "Team Check",
+    Description = "Bỏ qua đồng đội, màu theo team",
+    Default  = false,
+    Callback = function(val)
+        teamCheck = val
+    end
+})
+
+EspTab:AddColorpicker("esp_color", {
+    Title    = "Màu ESP",
+    Default  = Color3.fromRGB(255, 60, 60),
+    Callback = function(val)
+        espColor = val
     end
 })
