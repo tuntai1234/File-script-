@@ -89,3 +89,64 @@ PlayerTab:AddButton({
 })
 
 Window:SelectTab(1)
+local function startFly()
+    flying = true
+    humanoid.PlatformStand = true
+    bodyVelocity = Instance.new("BodyVelocity", hrp)
+    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyVelocity.Velocity = Vector3.zero
+    bodyGyro = Instance.new("BodyGyro", hrp)
+    bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    bodyGyro.P = 1e4
+end
+
+local function stopFly()
+    flying = false
+    humanoid.PlatformStand = false
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not flying then return end
+    local cam = workspace.CurrentCamera
+    local move = Vector3.zero
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = cam.CFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = cam.CFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = cam.CFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = cam.CFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move = Vector3.new(0,1,0) end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then move = Vector3.new(0,1,0) end
+
+    bodyVelocity.Velocity = move.Magnitude > 0 and move.Unit * flySpeed or Vector3.zero
+    bodyGyro.CFrame = cam.CFrame
+end)
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    hrp = char:WaitForChild("HumanoidRootPart")
+    humanoid.WalkSpeed = walkSpeed
+end)
+
+-- ========== 2 TOGGLE MAIN TAB ==========
+Main2Tab:AddToggle("FlyToggle", {
+    Title = "Fly",
+    Default = false,
+    Callback = function(value)
+        if value then startFly() else stopFly() end
+    end
+})
+
+Main2Tab:AddSlider("WalkSpeed", {
+    Title = "Tốc độ chạy",
+    Default = 16,
+    Min = 4,
+    Max = 200,
+    Rounding = 1,
+    Callback = function(value)
+        walkSpeed = value
+        humanoid.WalkSpeed = value
+    end
+})
