@@ -1007,7 +1007,7 @@ local function CreateWPItem(id, cf)
 
     TBtn.MouseButton1Click:Connect(function()
         SmoothTeleport(cf)
-        Toast("→ "..((_G.TM4_WPNames[id]) or "Point "..id), F.Accent)
+        Toast(" Đã dịch chuyển  tới  "..((_G.TM4_WPNames[id]) or "Point "..id), F.Accent)
     end)
     DBtn.MouseButton1Click:Connect(function()
         local name = _G.TM4_WPNames[id] or ("Point "..id)
