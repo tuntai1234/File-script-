@@ -1281,7 +1281,7 @@ UIS.InputBegan:Connect(function(inp,gp)
         end
         if nearCF then
             SmoothTeleport(nearCF.cf)
-            Toast("[G] → "..((_G.TM4_WPNames[nearCF.id]) or "Point "..nearCF.id), F.Accent)
+            Toast("[G] Đã dịch chuyển tới "..((_G.TM4_WPNames[nearCF.id]) or "Point "..nearCF.id), F.Accent)
         else
             Toast("No waypoints!", F.Danger)
         end
