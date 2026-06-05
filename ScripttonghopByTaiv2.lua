@@ -1,0 +1,469 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "GUI Tổng hợp V2",
+    SubTitle = "ờ...",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 400),
+    Acrylic = true,
+    Theme = "Light",
+    MinimizeKey = Enum.KeyCode.F10
+})
+
+-- Tab Của Gui
+local MainTab = Window:AddTab({
+    Title = "Main",
+    Icon = "home"
+})
+
+
+local Main2Tab = Window:AddTab({
+    Title = "Player",
+    Icon = "user"
+})
+
+-- Phân nhóm
+MainTab:AddSection("Di chuyển")
+
+-- Toggle Fly (tự làm, không dùng loadstring)
+local UIS        = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players    = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local flyActive  = false
+local flySpeed   = 60
+local flyConn    = nil
+local bodyVel    = nil
+local bodyGyro   = nil
+
+local function StartFly()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    hum.PlatformStand = true
+
+    bodyVel = Instance.new("BodyVelocity", hrp)
+    bodyVel.Velocity       = Vector3.zero
+    bodyVel.MaxForce       = Vector3.new(1e5, 1e5, 1e5)
+
+    bodyGyro = Instance.new("BodyGyro", hrp)
+    bodyGyro.MaxTorque     = Vector3.new(1e5, 1e5, 1e5)
+    bodyGyro.P             = 1e4
+    bodyGyro.CFrame        = hrp.CFrame
+
+    flyConn = RunService.Heartbeat:Connect(function()
+        local cam = workspace.CurrentCamera
+        if not cam or not hrp then return end
+
+        local dir = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
+
+        if dir.Magnitude > 0 then
+            bodyVel.Velocity = dir.Unit * flySpeed
+        else
+            bodyVel.Velocity = Vector3.zero
+        end
+        bodyGyro.CFrame = cam.CFrame
+    end)
+end
+
+local function StopFly()
+    if flyConn then flyConn:Disconnect(); flyConn = nil end
+    if bodyVel  then bodyVel:Destroy();  bodyVel  = nil end
+    if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then hum.PlatformStand = false; hum.JumpPower = 50 end
+    end
+end
+
+MainTab:AddToggle("fly_toggle", {
+    Title       = "Fly",
+    Description = "Bật/tắt bay tự do  (W A S D + Space + Shift)",
+    Default     = false,
+    Callback    = function(val)
+        flyActive = val
+        if val then StartFly() else StopFly() end
+    end
+})
+
+MainTab:AddSlider("fly_speed", {
+    Title   = "Tốc độ bay",
+    Min     = 10,
+    Max     = 300,
+    Default = 60,
+    Rounding = 1,
+    Callback = function(val)
+        flySpeed = val
+    end
+})
+
+MainTab:AddButton({
+    Title = "click to tp",
+    Description = " script sẽ cho bạn tool khi bấm vào 1 nào đó sẽ tp bạn dênd đó ",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
+    end
+})
+MainTab:AddButton({
+    Title = "nocilp",
+Description = "Script giúp bạn đi xuyên vật thể",
+ Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
+    end
+})
+
+-- ================================================================
+-- MOBILE FLY CONTROLS
+-- ================================================================
+local CoreGui2   = game:GetService("CoreGui")
+local MobileGui  = Instance.new("ScreenGui")
+MobileGui.Name          = "FlyMobileGui"
+MobileGui.ResetOnSpawn  = false
+MobileGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+MobileGui.Parent        = CoreGui2
+
+-- Chỉ hiện khi fly bật
+MobileGui.Enabled = false
+
+-- Bảng trạng thái nút mobile
+local mobileKeys = {
+    fwd = false, back = false,
+    left = false, right = false,
+    up   = false, down = false,
+}
+
+local function MkFlyBtn(parent, text, x, y, w, h, onDown, onUp)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size              = UDim2.new(0, w, 0, h)
+    btn.Position          = UDim2.new(0, x, 0, y)
+    btn.BackgroundColor3  = Color3.fromRGB(30, 30, 50)
+    btn.BackgroundTransparency = 0.35
+    btn.Text              = text
+    btn.TextColor3        = Color3.fromRGB(255, 255, 255)
+    btn.TextSize          = 18
+    btn.Font              = Enum.Font.GothamBold
+    btn.AutoButtonColor   = false
+    btn.ZIndex            = 25
+    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 10)
+    local s = Instance.new("UIStroke", btn)
+    s.Color = Color3.fromRGB(0, 140, 255); s.Thickness = 1.5
+
+    btn.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+        or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            btn.BackgroundTransparency = 0.1
+            if onDown then onDown() end
+        end
+    end)
+    btn.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+        or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            btn.BackgroundTransparency = 0.35
+            if onUp then onUp() end
+        end
+    end)
+    return btn
+end
+
+-- Pad trái: W A S D
+local PadL = Instance.new("Frame", MobileGui)
+PadL.Size = UDim2.new(0, 152, 0, 152)
+PadL.Position = UDim2.new(0, 16, 1, -170)
+PadL.BackgroundTransparency = 1
+
+MkFlyBtn(PadL, "▲", 52, 0,   48, 48, function() mobileKeys.fwd=true  end, function() mobileKeys.fwd=false  end)
+MkFlyBtn(PadL, "◀", 0,  52,  48, 48, function() mobileKeys.left=true end, function() mobileKeys.left=false end)
+MkFlyBtn(PadL, "▼", 52, 104, 48, 48, function() mobileKeys.back=true end, function() mobileKeys.back=false end)
+MkFlyBtn(PadL, "▶", 104,52,  48, 48, function() mobileKeys.right=true end,function() mobileKeys.right=false end)
+
+-- Pad phải: Lên / Xuống
+local PadR = Instance.new("Frame", MobileGui)
+PadR.Size = UDim2.new(0, 56, 0, 110)
+PadR.Position = UDim2.new(1, -72, 1, -126)
+PadR.BackgroundTransparency = 1
+
+MkFlyBtn(PadR, "↑", 0, 0,  56, 48, function() mobileKeys.up=true   end, function() mobileKeys.up=false   end)
+MkFlyBtn(PadR, "↓", 0, 62, 56, 48, function() mobileKeys.down=true end, function() mobileKeys.down=false end)
+
+-- Override StartFly để đọc cả mobile keys
+local _origFlyConn = flyConn
+local function StartFlyMobile()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    hum.PlatformStand = true
+    hum.JumpPower = 0
+
+    bodyVel = Instance.new("BodyVelocity", hrp)
+    bodyVel.Velocity  = Vector3.zero
+    bodyVel.MaxForce  = Vector3.new(1e5, 1e5, 1e5)
+
+    bodyGyro = Instance.new("BodyGyro", hrp)
+    bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    bodyGyro.P         = 1e4
+    bodyGyro.CFrame    = hrp.CFrame
+
+    MobileGui.Enabled = true
+
+    flyConn = RunService.Heartbeat:Connect(function()
+        local cam = workspace.CurrentCamera
+        if not cam or not hrp then return end
+        local dir = Vector3.zero
+
+        -- PC keys
+        if UIS:IsKeyDown(Enum.KeyCode.W)          then dir = dir + cam.CFrame.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.S)          then dir = dir - cam.CFrame.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.A)          then dir = dir - cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D)          then dir = dir + cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space)      then dir = dir + Vector3.new(0,1,0)     end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift)  then dir = dir - Vector3.new(0,1,0)     end
+
+        -- Mobile keys
+        if mobileKeys.fwd   then dir = dir + cam.CFrame.LookVector  end
+        if mobileKeys.back  then dir = dir - cam.CFrame.LookVector  end
+        if mobileKeys.left  then dir = dir - cam.CFrame.RightVector end
+        if mobileKeys.right then dir = dir + cam.CFrame.RightVector end
+        if mobileKeys.up    then dir = dir + Vector3.new(0,1,0)     end
+        if mobileKeys.down  then dir = dir - Vector3.new(0,1,0)     end
+
+        bodyVel.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+        bodyGyro.CFrame  = cam.CFrame
+    end)
+end
+
+-- Override StartFly/StopFly
+StartFly = StartFlyMobile
+local _origStop = StopFly
+StopFly = function()
+    _origStop()
+    MobileGui.Enabled = false
+    for k in pairs(mobileKeys) do mobileKeys[k] = false end
+end
+-- ================================================================
+local TeleTab = Window:AddTab({
+    Title = "Quick Tele",
+    Icon  = "map-pin"
+})
+
+local Players     = game:GetService("Players")
+local RunService  = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local QT_Waypoints = {}
+local QT_Names     = {}
+local QT_Count     = 0
+local QT_Selected  = nil
+local QT_SelPlayer = nil
+
+local function SmoothTP(cf)
+    local ch  = LocalPlayer.Character; if not ch then return end
+    local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+    local hum = ch:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = 0 end
+    local orig = hrp.CFrame
+    for i = 1, 10 do hrp.CFrame = orig:Lerp(cf, i/10); RunService.Heartbeat:Wait() end
+    if hum then hum.WalkSpeed = 16 end
+end
+
+-- ── Section Waypoints ──────────────────────────────────────
+TeleTab:AddSection("Waypoints")
+
+-- Dropdown 2: Chọn điểm (khai báo trước nút 1)
+local WPDropdown = TeleTab:AddDropdown("wp_dropdown", {
+    Title       = "2 · Chọn điểm đã lưu",
+    Description = "Chọn điểm muốn teleport tới",
+    Values      = {},
+    Multi       = false,
+    Default     = nil,
+    Callback    = function(val)
+        for id, name in pairs(QT_Names) do
+            if name == val then QT_Selected = id; break end
+        end
+    end
+})
+
+-- Hàm refresh dropdown (phải định nghĩa sau WPDropdown)
+local function RefreshWPDropdown()
+    local vals, ids = {}, {}
+    for id in pairs(QT_Waypoints) do table.insert(ids, id) end
+    table.sort(ids)
+    for _, id in ipairs(ids) do
+        table.insert(vals, QT_Names[id] or "Điểm "..id)
+    end
+    WPDropdown:SetValues(vals)
+    if #vals > 0 then
+        WPDropdown:SetValue(vals[#vals])
+        QT_Selected = ids[#ids]
+    end
+end
+
+-- Nút 1: Lưu vị trí
+TeleTab:AddButton({
+    Title       = "1 · Lưu vị trí hiện tại",
+    Description = "Lưu chỗ đang đứng vào danh sách",
+    Callback    = function()
+        local ch  = LocalPlayer.Character; if not ch then return end
+        local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        QT_Count = QT_Count + 1
+        QT_Waypoints[QT_Count] = hrp.CFrame
+        QT_Names[QT_Count]     = "Điểm " .. QT_Count
+        QT_Selected            = QT_Count
+        RefreshWPDropdown()
+        Fluent:Notify({
+            Title   = "Đã lưu",
+            Content = "Điểm " .. QT_Count .. " đã được lưu",
+            Duration = 3,
+        })
+    end
+})
+
+-- Nút 3: Teleport
+TeleTab:AddButton({
+    Title       = "3 · Teleport tới điểm đã chọn",
+    Description = "Dịch chuyển tới điểm đang chọn",
+    Callback    = function()
+        if not QT_Selected or not QT_Waypoints[QT_Selected] then
+            Fluent:Notify({Title="Chưa chọn điểm!", Content="Bấm nút 2 để chọn trước", Duration=3})
+            return
+        end
+        SmoothTP(QT_Waypoints[QT_Selected])
+        Fluent:Notify({
+            Title   = "Đã tele",
+            Content = "→ " .. (QT_Names[QT_Selected] or "Điểm "..QT_Selected),
+            Duration = 3,
+        })
+    end
+})
+
+-- Input 4: Đổi tên — sau khi nhập xong tự refresh dropdown luôn
+local RenameInput = TeleTab:AddInput("rename_input", {
+    Title       = "4 · Đổi tên điểm đã chọn",
+    Description = "Nhập tên mới rồi bấm Enter",
+    Placeholder = "Nhập tên mới...",
+    Numeric     = false,
+    Finished    = true,
+    Callback    = function(val)
+        if not QT_Selected then
+            Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3})
+            return
+        end
+        if val == "" then
+            Fluent:Notify({Title="Tên trống!", Content="Nhập tên hợp lệ", Duration=3})
+            return
+        end
+        local old = QT_Names[QT_Selected]
+        QT_Names[QT_Selected] = val
+        RefreshWPDropdown()   -- cập nhật dropdown ngay
+        Fluent:Notify({
+            Title   = "Đã đổi tên",
+            Content = old .. " → " .. val,
+            Duration = 3,
+        })
+    end
+})
+
+-- Nút xóa điểm đang chọn
+TeleTab:AddButton({
+    Title       = "🗑 Xóa điểm đang chọn",
+    Description = "Xóa điểm đã chọn ở dropdown khỏi danh sách",
+    Callback    = function()
+        if not QT_Selected then
+            Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3})
+            return
+        end
+        local name = QT_Names[QT_Selected] or "Điểm "..QT_Selected
+        QT_Waypoints[QT_Selected] = nil
+        QT_Names[QT_Selected]     = nil
+        QT_Selected               = nil
+        RefreshWPDropdown()
+        Fluent:Notify({Title="Đã xóa", Content=name, Duration=3})
+    end
+})
+
+-- Nút reset toàn bộ danh sách
+TeleTab:AddButton({
+    Title       = "⚠ Reset toàn bộ danh sách",
+    Description = "Xóa hết tất cả các điểm đã lưu",
+    Callback    = function()
+        QT_Waypoints = {}
+        QT_Names     = {}
+        QT_Count     = 0
+        QT_Selected  = nil
+        WPDropdown:SetValues({})
+        Fluent:Notify({Title="Đã reset", Content="Danh sách điểm đã được xóa sạch", Duration=3})
+    end
+})
+
+-- ── Section Players ────────────────────────────────────────
+TeleTab:AddSection("Players")
+
+-- Dropdown 5: Chọn player
+local PlrDropdown = TeleTab:AddDropdown("plr_dropdown", {
+    Title       = "5 · Chọn player",
+    Description = "Chọn player muốn teleport tới",
+    Values      = {},
+    Multi       = false,
+    Default     = nil,
+    Callback    = function(val)
+        QT_SelPlayer = val
+    end
+})
+
+-- Nút refresh danh sách player
+TeleTab:AddButton({
+    Title       = "↺ Làm mới danh sách player",
+    Description = "Cập nhật danh sách player trong server",
+    Callback    = function()
+        local vals = {}
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer then table.insert(vals, plr.Name) end
+        end
+        PlrDropdown:SetValues(vals)
+        if #vals > 0 then
+            PlrDropdown:SetValue(vals[1])
+            QT_SelPlayer = vals[1]
+            Fluent:Notify({Title="Đã làm mới", Content=#vals.." player trong server", Duration=3})
+        else
+            Fluent:Notify({Title="Không có player", Content="Không ai trong server", Duration=3})
+        end
+    end
+})
+
+-- Nút 6: Tele tới player
+TeleTab:AddButton({
+    Title       = "6 · Teleport tới player đã chọn",
+    Description = "Dịch chuyển tới player đang chọn",
+    Callback    = function()
+        if not QT_SelPlayer then
+            Fluent:Notify({Title="Chưa chọn player!", Content="Chọn player ở dropdown trước", Duration=3})
+            return
+        end
+        local plr = Players:FindFirstChild(QT_SelPlayer)
+        if not plr then
+            Fluent:Notify({Title="Player đã rời!", Content=QT_SelPlayer.." không còn trong server", Duration=3})
+            QT_SelPlayer = nil; return
+        end
+        local ch  = plr.Character; if not ch then return end
+        local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        SmoothTP(hrp.CFrame + Vector3.new(3, 0, 0))
+        Fluent:Notify({
+            Title   = "Đã tele",
+            Content = "→ " .. QT_SelPlayer,
+            Duration = 3,
+        })
+    end
+})
