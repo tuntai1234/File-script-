@@ -39,7 +39,7 @@ MainTab:AddButton({
     Description = "Đây là 1 menu khiến bạn có thể dịch chuyển tới nơi đã lưu",
     Callback = function()
 
-loadstring("http s://pastefy.app/2JPFITBm/raw")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/tuntai1234/File-script-/refs/heads/main/TeleportMenu_v4_Fluent.lua"))()
     end
 })
 MainTab:AddButton({
