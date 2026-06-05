@@ -2,11 +2,11 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 
 local Window = Fluent:CreateWindow({
     Title = "GUI Tổng hợp V2",
-    SubTitle = "Bấm F10 để bật gui",
+    SubTitle = "ờ...",
     TabWidth = 160,
-    Size = UDim2.fromOffset(500, 400),
+    Size = UDim2.fromOffset(580, 400),
     Acrylic = true,
-    Theme = "Dark",
+    Theme = "Light",
     MinimizeKey = Enum.KeyCode.F10
 })
 
@@ -22,10 +22,11 @@ local Main2Tab = Window:AddTab({
     Icon = "user"
 })
 
+-- Phân nhóm
+MainTab:AddSection("Di chuyển")
 
-
--- Nút để bật script 
-game:GetService("UserInputService")
+-- Toggle Fly (tự làm, không dùng loadstring)
+local UIS        = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players    = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -110,9 +111,8 @@ MainTab:AddSlider("fly_speed", {
 MainTab:AddButton({
     Title = "click to tp",
     Description = " script sẽ cho bạn tool khi bấm vào 1 nào đó sẽ tp bạn dênd đó ",
- Callback = function()
-
-loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
     end
 })
 MainTab:AddButton({
@@ -122,6 +122,10 @@ Description = "Script giúp bạn đi xuyên vật thể",
         loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
     end
 })
+
+-- ================================================================
+-- MOBILE FLY CONTROLS
+-- ================================================================
 local CoreGui2   = game:GetService("CoreGui")
 local MobileGui  = Instance.new("ScreenGui")
 MobileGui.Name          = "FlyMobileGui"
@@ -274,38 +278,8 @@ local function SmoothTP(cf)
     for i = 1, 10 do hrp.CFrame = orig:Lerp(cf, i/10); RunService.Heartbeat:Wait() end
     if hum then hum.WalkSpeed = 16 end
 end
-MainTab:AddSection("Giải trí")
-MainTab:AddButton({
-    Title = "7yd7",
-Description = "Script này giúp bạn thực hiện hành động  người khác có thể thấy",
- Callback = function()
-        
-loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Hub/refs/heads/Branch/GUIS/Emotes.lua"))()
-    end
-})
 
-
-
-
-
-
--- Paragraph
-Main2Tab:AddParagraph({
-    Title = "Thông tin",
-    Content = "Đây là đoạn mô tả."
-})
-
--- Tab Player
-PlayerTab:AddSection("Player")
-
-PlayerTab:AddButton({
-    Title = "Test Player",
-    Callback = function()
-        print("Player Button")
-    end
-})
-
-Window:SelectTab(1)
+-- ── Section Waypoints ──────────────────────────────────────
 TeleTab:AddSection("Waypoints")
 
 -- Dropdown 2: Chọn điểm (khai báo trước nút 1)
