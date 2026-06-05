@@ -16,10 +16,19 @@ local MainTab = Window:AddTab({
     Icon = "home"
 })
 
-
 local Main2Tab = Window:AddTab({
     Title = "Player",
     Icon = "user"
+})
+
+local TeleTab = Window:AddTab({
+    Title = "Quick Tele",
+    Icon  = "map-pin"
+})
+
+local EspTab = Window:AddTab({
+    Title = "ESP",
+    Icon = "eye"
 })
 
 -- Phân nhóm
@@ -254,11 +263,6 @@ StopFly = function()
     for k in pairs(mobileKeys) do mobileKeys[k] = false end
 end
 -- ================================================================
-local TeleTab = Window:AddTab({
-    Title = "Quick Tele",
-    Icon  = "map-pin"
-})
-
 local Players     = game:GetService("Players")
 local RunService  = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -469,12 +473,8 @@ TeleTab:AddButton({
 })
 
 -- ================================================================
--- TAB ESP
+-- NỘI DUNG ESP
 -- ================================================================
-local EspTab = Window:AddTab({
-    Title = "ESP",
-    Icon  = "eye"
-})
 
 local Camera    = workspace.CurrentCamera
 local espGui    = Instance.new("ScreenGui")
@@ -657,21 +657,24 @@ RunService.RenderStepped:Connect(function()
 
         -- Box + Line cần WorldToViewportPoint
         if hrp and head then
-            local rootPos, rootVis = Camera:WorldToViewportPoint(hrp.Position)
-            local headPos, headVis = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.7,0))
-            local feetPos          = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,2.5,0))
+            -- Lấy điểm feet chính xác từ HRP - nửa chiều cao nhân vật
+            local feetWorld = hrp.Position - Vector3.new(0, 3, 0)
+            local headWorld = head.Position + Vector3.new(0, 0.6, 0)
 
-            if rootVis then
-                -- BOX
+            local headPos, headVis = Camera:WorldToViewportPoint(headWorld)
+            local feetPos          = Camera:WorldToViewportPoint(feetWorld)
+            local rootPos, rootVis = Camera:WorldToViewportPoint(hrp.Position)
+
+            if rootVis and headVis then
+                -- BOX: tính từ head tới feet, center theo X của root
                 if boxEnabled then
-                    local h2d   = math.abs(headPos.Y - feetPos.Y)
-                    local w2d   = h2d * 0.55
-                    local cx    = rootPos.X
-                    local top   = headPos.Y
+                    local h2d  = math.abs(feetPos.Y - headPos.Y)
+                    local w2d  = math.max(h2d * 0.5, 20)
+                    local cx   = rootPos.X
+                    local top  = math.min(headPos.Y, feetPos.Y)
+                    local col  = teamCheck and GetTeamColor(plr) or espColor
                     obj.box.Position = UDim2.new(0, cx - w2d/2, 0, top)
                     obj.box.Size     = UDim2.new(0, w2d, 0, h2d)
-                    -- update màu viền
-                    local col = teamCheck and GetTeamColor(plr) or espColor
                     for _, f in ipairs(obj.box:GetChildren()) do
                         if f:IsA("Frame") then f.BackgroundColor3 = col end
                     end
@@ -680,18 +683,23 @@ RunService.RenderStepped:Connect(function()
                     obj.box.Visible = false
                 end
 
-                -- LINE (từ giữa màn hình xuống)
+                -- TRACER: vẽ đường từ góc dưới màn hình tới feet của player
                 if lineEnabled then
-                    local sx, sy = vp.X/2, vp.Y
-                    local ex, ey = rootPos.X, rootPos.Y
-                    local dx, dy = ex-sx, ey-sy
-                    local len    = math.sqrt(dx*dx+dy*dy)
-                    local angle  = math.deg(math.atan2(dy, dx)) + 90
-                    obj.line.Position  = UDim2.new(0, sx, 0, sy)
-                    obj.line.Size      = UDim2.new(0, 2, 0, len)
-                    obj.line.Rotation  = angle
-                    obj.line.BackgroundColor3 = teamCheck and GetTeamColor(plr) or espColor
-                    obj.line.Visible   = true
+                    local sx, sy = vp.X / 2, vp.Y          -- điểm bắt đầu: giữa-dưới
+                    local ex, ey = feetPos.X, feetPos.Y     -- điểm kết thúc: feet player
+                    local dx, dy = ex - sx, ey - sy
+                    local len    = math.sqrt(dx * dx + dy * dy)
+                    if len > 0 then
+                        local angle = math.deg(math.atan2(dy, dx)) + 90
+                        local col   = teamCheck and GetTeamColor(plr) or espColor
+                        -- Đặt origin tại điểm bắt đầu, xoay về phía target
+                        obj.line.AnchorPoint       = Vector2.new(0.5, 0)
+                        obj.line.Position          = UDim2.new(0, sx, 0, sy)
+                        obj.line.Size              = UDim2.new(0, 2, 0, len)
+                        obj.line.Rotation          = angle
+                        obj.line.BackgroundColor3  = col
+                        obj.line.Visible           = true
+                    end
                 else
                     obj.line.Visible = false
                 end
