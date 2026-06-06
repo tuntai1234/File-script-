@@ -805,3 +805,10 @@ EspTab:AddColorpicker("esp_color", {
         espColor = val
     end
 })
+MainTab:AddButton({
+    Title = "hitbox",
+
+ Callback = function()
+loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))())
+    end
+})
