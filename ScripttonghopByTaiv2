@@ -655,25 +655,27 @@ RunService.RenderStepped:Connect(function()
             obj.highlight.OutlineColor = teamCheck and GetTeamColor(plr) or espColor
         end
 
-        -- Box + Line cần WorldToViewportPoint
+        -- Box + Line
         if hrp and head then
-            -- Lấy điểm feet chính xác từ HRP - nửa chiều cao nhân vật
-            local feetWorld = hrp.Position - Vector3.new(0, 3, 0)
-            local headWorld = head.Position + Vector3.new(0, 0.6, 0)
+            local headWorld = head.Position + Vector3.new(0, 0.5, 0)
+            local feetWorld = hrp.Position  - Vector3.new(0, 3.2, 0)
 
-            local headPos, headVis = Camera:WorldToViewportPoint(headWorld)
-            local feetPos          = Camera:WorldToViewportPoint(feetWorld)
-            local rootPos, rootVis = Camera:WorldToViewportPoint(hrp.Position)
+            local headPos = Camera:WorldToViewportPoint(headWorld)
+            local feetPos = Camera:WorldToViewportPoint(feetWorld)
+            local rootPos = Camera:WorldToViewportPoint(hrp.Position)
 
-            if rootVis and headVis then
-                -- BOX: tính từ head tới feet, center theo X của root
+            -- Chỉ vẽ khi trước mặt camera (Z > 0)
+            local inFront = headPos.Z > 0 and feetPos.Z > 0
+
+            if inFront then
+                -- BOX
                 if boxEnabled then
-                    local h2d  = math.abs(feetPos.Y - headPos.Y)
-                    local w2d  = math.max(h2d * 0.5, 20)
-                    local cx   = rootPos.X
                     local top  = math.min(headPos.Y, feetPos.Y)
+                    local bot  = math.max(headPos.Y, feetPos.Y)
+                    local h2d  = math.max(bot - top, 10)
+                    local w2d  = math.max(h2d * 0.5, 14)
                     local col  = teamCheck and GetTeamColor(plr) or espColor
-                    obj.box.Position = UDim2.new(0, cx - w2d/2, 0, top)
+                    obj.box.Position = UDim2.new(0, rootPos.X - w2d/2, 0, top)
                     obj.box.Size     = UDim2.new(0, w2d, 0, h2d)
                     for _, f in ipairs(obj.box:GetChildren()) do
                         if f:IsA("Frame") then f.BackgroundColor3 = col end
@@ -683,22 +685,24 @@ RunService.RenderStepped:Connect(function()
                     obj.box.Visible = false
                 end
 
-                -- TRACER: vẽ đường từ góc dưới màn hình tới feet của player
+                -- TRACER
                 if lineEnabled then
-                    local sx, sy = vp.X / 2, vp.Y          -- điểm bắt đầu: giữa-dưới
-                    local ex, ey = feetPos.X, feetPos.Y     -- điểm kết thúc: feet player
-                    local dx, dy = ex - sx, ey - sy
-                    local len    = math.sqrt(dx * dx + dy * dy)
-                    if len > 0 then
-                        local angle = math.deg(math.atan2(dy, dx)) + 90
-                        local col   = teamCheck and GetTeamColor(plr) or espColor
-                        -- Đặt origin tại điểm bắt đầu, xoay về phía target
-                        obj.line.AnchorPoint       = Vector2.new(0.5, 0)
-                        obj.line.Position          = UDim2.new(0, sx, 0, sy)
-                        obj.line.Size              = UDim2.new(0, 2, 0, len)
-                        obj.line.Rotation          = angle
-                        obj.line.BackgroundColor3  = col
-                        obj.line.Visible           = true
+                    local col  = teamCheck and GetTeamColor(plr) or espColor
+                    local sx   = vp.X / 2
+                    local sy   = vp.Y
+                    local ex   = feetPos.X
+                    local ey   = feetPos.Y
+                    local dx   = ex - sx
+                    local dy   = ey - sy
+                    local len  = math.sqrt(dx*dx + dy*dy)
+                    if len > 1 then
+                        obj.line.AnchorPoint      = Vector2.new(0.5, 0)
+                        obj.line.Position         = UDim2.new(0, sx, 0, sy)
+                        obj.line.Size             = UDim2.new(0, 2, 0, len)
+                        obj.line.Rotation         = math.deg(math.atan2(dy, dx)) + 90
+                        obj.line.BackgroundColor3 = col
+                        obj.line.ZIndex           = 5
+                        obj.line.Visible          = true
                     end
                 else
                     obj.line.Visible = false
