@@ -523,10 +523,12 @@ EspTab:AddColorpicker("esp_color",{Title="Màu ESP",       Default=Color3.fromRG
 -- ================================================================
 -- HITBOX
 -- ================================================================
-local hbEnabled  = false
-local hbSize     = 10
-local hbVisible  = false
-local hbPlayers  = {}
+local hbEnabled      = false
+local hbSize         = 10
+local hbVisible      = false
+local hbColor        = Color3.fromRGB(0, 100, 255)
+local hbTransparency = 0.5
+local hbPlayers      = {}
 
 -- Lưu size gốc để restore
 local hbOrigSize = {}
@@ -645,9 +647,6 @@ HitboxTab:AddInput("hb_size", {
         Fluent:Notify({Title="Đã đặt size", Content="Hitbox size: "..n, Duration=3})
     end
 })
-
-local hbColor       = Color3.fromRGB(0, 100, 255)
-local hbTransparency = 0.5
 
 HitboxTab:AddToggle("hb_visible", {
     Title       = "Hiện Hitbox",
