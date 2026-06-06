@@ -18,10 +18,11 @@ local CoreGui     = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 -- ── Tabs ─────────────────────────────────────────────────────
-local MainTab  = Window:AddTab({ Title = "Main",       Icon = "home"    })
-local Main2Tab = Window:AddTab({ Title = "Player",     Icon = "user"    })
-local TeleTab  = Window:AddTab({ Title = "Quick Tele", Icon = "map-pin" })
-local EspTab   = Window:AddTab({ Title = "ESP",        Icon = "eye"     })
+local MainTab    = Window:AddTab({ Title = "Main",       Icon = "home"      })
+local Main2Tab   = Window:AddTab({ Title = "Player",     Icon = "user"      })
+local TeleTab    = Window:AddTab({ Title = "Quick Tele", Icon = "map-pin"   })
+local EspTab     = Window:AddTab({ Title = "ESP",        Icon = "eye"       })
+local HitboxTab  = Window:AddTab({ Title = "Hitbox",     Icon = "crosshair" })
 
 -- ================================================================
 -- FLY
@@ -119,9 +120,15 @@ MainTab:AddToggle("fly_toggle",{
     Title="Fly", Description="Bật/tắt bay tự do (W A S D + Space + Shift)", Default=false,
     Callback=function(val) if val then StartFly() else StopFly() end end
 })
-MainTab:AddSlider("fly_speed",{
-    Title="Tốc độ bay", Min=10, Max=300, Default=60, Rounding=1,
-    Callback=function(val) flySpeed=val end
+MainTab:AddInput("fly_speed",{
+    Title="Tốc độ bay", Description="Nhập tốc độ bay rồi bấm Enter (mặc định 60)",
+    Placeholder="Nhập số...", Numeric=true, Finished=true,
+    Callback=function(val)
+        local n=tonumber(val)
+        if not n or n<1 then Fluent:Notify({Title="Lỗi!", Content="Nhập số hợp lệ (>= 1)", Duration=3}); return end
+        flySpeed=n
+        Fluent:Notify({Title="Đã đặt tốc độ", Content="Fly speed: "..n, Duration=3})
+    end
 })
 MainTab:AddButton({
     Title="click to tp", Description="Script cho tool TP khi bấm vào vị trí",
@@ -131,10 +138,7 @@ MainTab:AddButton({
     Title="nocilp", Description="Script giúp bạn đi xuyên vật thể",
     Callback=function() loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))() end
 })
-MainTab:AddButton({
-    Title="Hitbox",
-    Callback=function() loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))() end
-})
+
 -- ================================================================
 -- QUICK TELE
 -- ================================================================
@@ -515,3 +519,151 @@ EspTab:AddToggle("esp_line",     {Title="Tracer Line",    Description="Vẽ đư
 EspTab:AddSection("Tùy chỉnh")
 EspTab:AddToggle("esp_team",     {Title="Team Check",     Description="Bỏ qua đồng đội, màu theo team",        Default=false, Callback=function(v) teamCheck=v   end})
 EspTab:AddColorpicker("esp_color",{Title="Màu ESP",       Default=Color3.fromRGB(255,60,60),                   Callback=function(v) espColor=v end})
+
+-- ================================================================
+-- HITBOX
+-- ================================================================
+local hbEnabled  = false
+local hbSize     = 10
+local hbPlayers  = {}
+
+-- Lưu size gốc để restore
+local hbOrigSize = {}
+
+local function GetHBPlayers()
+    hbPlayers = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character
+        and plr.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(hbPlayers, plr)
+        end
+    end
+end
+
+-- Restore tất cả hitbox về gốc
+local function RestoreHitbox()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local orig = hbOrigSize[plr]
+                if orig then
+                    hrp.Size        = orig.size
+                    hrp.Transparency= orig.trans
+                    hrp.CanCollide  = orig.collide
+                else
+                    hrp.Size        = Vector3.new(2, 2, 1)
+                    hrp.Transparency= 1
+                    hrp.CanCollide  = false
+                end
+            end
+        end
+    end
+    hbOrigSize = {}
+end
+
+-- RenderStepped update hitbox
+local hbConn = nil
+
+local function StartHitbox()
+    GetHBPlayers()
+    -- Lưu size gốc
+    for _, plr in ipairs(hbPlayers) do
+        local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and not hbOrigSize[plr] then
+            hbOrigSize[plr] = {
+                size    = hrp.Size,
+                trans   = hrp.Transparency,
+                collide = hrp.CanCollide,
+            }
+        end
+    end
+    hbConn = RunService.RenderStepped:Connect(function()
+        for _, plr in ipairs(hbPlayers) do
+            if plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Size        = Vector3.new(hbSize, hbSize, hbSize)
+                    hrp.Transparency= 0.7
+                    hrp.Material    = Enum.Material.Neon
+                    hrp.BrickColor  = BrickColor.new("Really blue")
+                    hrp.CanCollide  = false
+                end
+            end
+        end
+    end)
+end
+
+local function StopHitbox()
+    if hbConn then hbConn:Disconnect(); hbConn=nil end
+    RestoreHitbox()
+end
+
+-- Refresh player list mỗi 3s
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if hbEnabled then GetHBPlayers() end
+    end
+end)
+
+-- ── Fluent UI ─────────────────────────────────────────────
+HitboxTab:AddSection("Hitbox")
+
+HitboxTab:AddToggle("hb_toggle", {
+    Title       = "Bật Hitbox",
+    Description = "Phình to HumanoidRootPart của tất cả player",
+    Default     = false,
+    Callback    = function(val)
+        hbEnabled = val
+        if val then StartHitbox() else StopHitbox() end
+        Fluent:Notify({
+            Title   = val and "Hitbox BẬT" or "Hitbox TẮT",
+            Content = val and ("Size: "..hbSize) or "Đã restore về gốc",
+            Duration = 3,
+        })
+    end
+})
+
+HitboxTab:AddInput("hb_size", {
+    Title       = "Hitbox Size",
+    Description = "Nhập kích thước hitbox rồi bấm Enter (mặc định 10)",
+    Placeholder = "Nhập số...",
+    Numeric     = true,
+    Finished    = true,
+    Callback    = function(val)
+        local n = tonumber(val)
+        if not n or n < 1 then
+            Fluent:Notify({Title="Lỗi!", Content="Nhập số hợp lệ (>= 1)", Duration=3}); return
+        end
+        hbSize = n
+        Fluent:Notify({Title="Đã đặt size", Content="Hitbox size: "..n, Duration=3})
+    end
+})
+
+HitboxTab:AddToggle("hb_visible", {
+    Title       = "Hiện Hitbox",
+    Description = "Bật để thấy hitbox màu xanh, tắt để hitbox ẩn",
+    Default     = false,
+    Callback    = function(val)
+        -- Đổi transparency realtime
+        RunService.RenderStepped:Connect(function()
+            if not hbEnabled then return end
+            for _, plr in ipairs(hbPlayers) do
+                if plr.Character then
+                    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then hrp.Transparency = val and 0.5 or 1 end
+                end
+            end
+        end)
+    end
+})
+
+HitboxTab:AddButton({
+    Title       = "↺ Làm mới danh sách",
+    Description = "Cập nhật lại danh sách player cho hitbox",
+    Callback    = function()
+        GetHBPlayers()
+        Fluent:Notify({Title="Đã làm mới", Content=#hbPlayers.." player trong danh sách", Duration=3})
+    end
+})
