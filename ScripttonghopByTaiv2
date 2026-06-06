@@ -10,263 +10,131 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.F10
 })
 
--- Tab Của Gui
-local MainTab = Window:AddTab({
-    Title = "Main",
-    Icon = "home"
-})
-
-local Main2Tab = Window:AddTab({
-    Title = "Player",
-    Icon = "user"
-})
-
-local TeleTab = Window:AddTab({
-    Title = "Quick Tele",
-    Icon  = "map-pin"
-})
-
-local EspTab = Window:AddTab({
-    Title = "ESP",
-    Icon = "eye"
-})
-
--- Phân nhóm
-MainTab:AddSection("Di chuyển")
-
--- Toggle Fly (tự làm, không dùng loadstring)
-local UIS        = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Players    = game:GetService("Players")
+-- ── Services (khai báo 1 lần duy nhất) ──────────────────────
+local UIS         = game:GetService("UserInputService")
+local RunService  = game:GetService("RunService")
+local Players     = game:GetService("Players")
+local CoreGui     = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
-local flyActive  = false
-local flySpeed   = 60
-local flyConn    = nil
-local bodyVel    = nil
-local bodyGyro   = nil
-
-local function StartFly()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not hrp or not hum then return end
-
-    hum.PlatformStand = true
-
-    bodyVel = Instance.new("BodyVelocity", hrp)
-    bodyVel.Velocity       = Vector3.zero
-    bodyVel.MaxForce       = Vector3.new(1e5, 1e5, 1e5)
-
-    bodyGyro = Instance.new("BodyGyro", hrp)
-    bodyGyro.MaxTorque     = Vector3.new(1e5, 1e5, 1e5)
-    bodyGyro.P             = 1e4
-    bodyGyro.CFrame        = hrp.CFrame
-
-    flyConn = RunService.Heartbeat:Connect(function()
-        local cam = workspace.CurrentCamera
-        if not cam or not hrp then return end
-
-        local dir = Vector3.zero
-        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
-
-        if dir.Magnitude > 0 then
-            bodyVel.Velocity = dir.Unit * flySpeed
-        else
-            bodyVel.Velocity = Vector3.zero
-        end
-        bodyGyro.CFrame = cam.CFrame
-    end)
-end
-
-local function StopFly()
-    if flyConn then flyConn:Disconnect(); flyConn = nil end
-    if bodyVel  then bodyVel:Destroy();  bodyVel  = nil end
-    if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
-    local char = LocalPlayer.Character
-    if char then
-        local hum = char:FindFirstChild("Humanoid")
-        if hum then hum.PlatformStand = false; hum.JumpPower = 50 end
-    end
-end
-
-MainTab:AddToggle("fly_toggle", {
-    Title       = "Fly",
-    Description = "Bật/tắt bay tự do  (W A S D + Space + Shift)",
-    Default     = false,
-    Callback    = function(val)
-        flyActive = val
-        if val then StartFly() else StopFly() end
-    end
-})
-
-MainTab:AddSlider("fly_speed", {
-    Title   = "Tốc độ bay",
-    Min     = 10,
-    Max     = 300,
-    Default = 60,
-    Rounding = 1,
-    Callback = function(val)
-        flySpeed = val
-    end
-})
-
-MainTab:AddButton({
-    Title = "click to tp",
-    Description = " script sẽ cho bạn tool khi bấm vào 1 nào đó sẽ tp bạn dênd đó ",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))()
-    end
-})
-MainTab:AddButton({
-    Title = "nocilp",
-Description = "Script giúp bạn đi xuyên vật thể",
- Callback = function()
-        loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))()
-    end
-})
+-- ── Tabs ─────────────────────────────────────────────────────
+local MainTab  = Window:AddTab({ Title = "Main",       Icon = "home"    })
+local Main2Tab = Window:AddTab({ Title = "Player",     Icon = "user"    })
+local TeleTab  = Window:AddTab({ Title = "Quick Tele", Icon = "map-pin" })
+local EspTab   = Window:AddTab({ Title = "ESP",        Icon = "eye"     })
 
 -- ================================================================
--- MOBILE FLY CONTROLS
+-- FLY
 -- ================================================================
-local CoreGui2   = game:GetService("CoreGui")
-local MobileGui  = Instance.new("ScreenGui")
-MobileGui.Name          = "FlyMobileGui"
-MobileGui.ResetOnSpawn  = false
+local flySpeed = 60
+local flyConn  = nil
+local bodyVel  = nil
+local bodyGyro = nil
+
+local mobileKeys = { fwd=false, back=false, left=false, right=false, up=false, down=false }
+
+-- Mobile GUI
+local MobileGui = Instance.new("ScreenGui")
+MobileGui.Name = "FlyMobileGui"; MobileGui.ResetOnSpawn = false
 MobileGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-MobileGui.Parent        = CoreGui2
-
--- Chỉ hiện khi fly bật
-MobileGui.Enabled = false
-
--- Bảng trạng thái nút mobile
-local mobileKeys = {
-    fwd = false, back = false,
-    left = false, right = false,
-    up   = false, down = false,
-}
+MobileGui.Enabled = false; MobileGui.Parent = CoreGui
 
 local function MkFlyBtn(parent, text, x, y, w, h, onDown, onUp)
     local btn = Instance.new("TextButton", parent)
-    btn.Size              = UDim2.new(0, w, 0, h)
-    btn.Position          = UDim2.new(0, x, 0, y)
-    btn.BackgroundColor3  = Color3.fromRGB(30, 30, 50)
-    btn.BackgroundTransparency = 0.35
-    btn.Text              = text
-    btn.TextColor3        = Color3.fromRGB(255, 255, 255)
-    btn.TextSize          = 18
-    btn.Font              = Enum.Font.GothamBold
-    btn.AutoButtonColor   = false
-    btn.ZIndex            = 25
-    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 10)
-    local s = Instance.new("UIStroke", btn)
-    s.Color = Color3.fromRGB(0, 140, 255); s.Thickness = 1.5
-
-    btn.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch
-        or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            btn.BackgroundTransparency = 0.1
-            if onDown then onDown() end
+    btn.Size = UDim2.new(0,w,0,h); btn.Position = UDim2.new(0,x,0,y)
+    btn.BackgroundColor3 = Color3.fromRGB(30,30,50); btn.BackgroundTransparency = 0.35
+    btn.Text = text; btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.TextSize = 18; btn.Font = Enum.Font.GothamBold; btn.AutoButtonColor = false; btn.ZIndex = 25
+    local c = Instance.new("UICorner",btn); c.CornerRadius = UDim.new(0,10)
+    local s = Instance.new("UIStroke",btn); s.Color = Color3.fromRGB(0,140,255); s.Thickness = 1.5
+    btn.InputBegan:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            btn.BackgroundTransparency=0.1; if onDown then onDown() end
         end
     end)
-    btn.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch
-        or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            btn.BackgroundTransparency = 0.35
-            if onUp then onUp() end
+    btn.InputEnded:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            btn.BackgroundTransparency=0.35; if onUp then onUp() end
         end
     end)
-    return btn
 end
 
--- Pad trái: W A S D
-local PadL = Instance.new("Frame", MobileGui)
-PadL.Size = UDim2.new(0, 152, 0, 152)
-PadL.Position = UDim2.new(0, 16, 1, -170)
-PadL.BackgroundTransparency = 1
+local PadL = Instance.new("Frame",MobileGui); PadL.Size=UDim2.new(0,152,0,152)
+PadL.Position=UDim2.new(0,16,1,-170); PadL.BackgroundTransparency=1
+MkFlyBtn(PadL,"▲",52,0,48,48,  function() mobileKeys.fwd=true   end, function() mobileKeys.fwd=false   end)
+MkFlyBtn(PadL,"◀",0,52,48,48,  function() mobileKeys.left=true  end, function() mobileKeys.left=false  end)
+MkFlyBtn(PadL,"▼",52,104,48,48,function() mobileKeys.back=true  end, function() mobileKeys.back=false  end)
+MkFlyBtn(PadL,"▶",104,52,48,48,function() mobileKeys.right=true end, function() mobileKeys.right=false end)
+local PadR = Instance.new("Frame",MobileGui); PadR.Size=UDim2.new(0,56,0,110)
+PadR.Position=UDim2.new(1,-72,1,-126); PadR.BackgroundTransparency=1
+MkFlyBtn(PadR,"↑",0,0,56,48,  function() mobileKeys.up=true   end, function() mobileKeys.up=false   end)
+MkFlyBtn(PadR,"↓",0,62,56,48, function() mobileKeys.down=true end, function() mobileKeys.down=false end)
 
-MkFlyBtn(PadL, "▲", 52, 0,   48, 48, function() mobileKeys.fwd=true  end, function() mobileKeys.fwd=false  end)
-MkFlyBtn(PadL, "◀", 0,  52,  48, 48, function() mobileKeys.left=true end, function() mobileKeys.left=false end)
-MkFlyBtn(PadL, "▼", 52, 104, 48, 48, function() mobileKeys.back=true end, function() mobileKeys.back=false end)
-MkFlyBtn(PadL, "▶", 104,52,  48, 48, function() mobileKeys.right=true end,function() mobileKeys.right=false end)
-
--- Pad phải: Lên / Xuống
-local PadR = Instance.new("Frame", MobileGui)
-PadR.Size = UDim2.new(0, 56, 0, 110)
-PadR.Position = UDim2.new(1, -72, 1, -126)
-PadR.BackgroundTransparency = 1
-
-MkFlyBtn(PadR, "↑", 0, 0,  56, 48, function() mobileKeys.up=true   end, function() mobileKeys.up=false   end)
-MkFlyBtn(PadR, "↓", 0, 62, 56, 48, function() mobileKeys.down=true end, function() mobileKeys.down=false end)
-
--- Override StartFly để đọc cả mobile keys
-local _origFlyConn = flyConn
-local function StartFlyMobile()
-    local char = LocalPlayer.Character
-    if not char then return end
+local function StartFly()
+    local char = LocalPlayer.Character; if not char then return end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChild("Humanoid")
     if not hrp or not hum then return end
-
-    hum.PlatformStand = true
-    hum.JumpPower = 0
-
-    bodyVel = Instance.new("BodyVelocity", hrp)
-    bodyVel.Velocity  = Vector3.zero
-    bodyVel.MaxForce  = Vector3.new(1e5, 1e5, 1e5)
-
-    bodyGyro = Instance.new("BodyGyro", hrp)
-    bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    bodyGyro.P         = 1e4
-    bodyGyro.CFrame    = hrp.CFrame
-
+    hum.PlatformStand = true; hum.JumpPower = 0
+    bodyVel = Instance.new("BodyVelocity",hrp)
+    bodyVel.Velocity=Vector3.zero; bodyVel.MaxForce=Vector3.new(1e5,1e5,1e5)
+    bodyGyro = Instance.new("BodyGyro",hrp)
+    bodyGyro.MaxTorque=Vector3.new(1e5,1e5,1e5); bodyGyro.P=1e4; bodyGyro.CFrame=hrp.CFrame
     MobileGui.Enabled = true
-
     flyConn = RunService.Heartbeat:Connect(function()
-        local cam = workspace.CurrentCamera
-        if not cam or not hrp then return end
+        local cam = workspace.CurrentCamera; if not cam or not hrp then return end
         local dir = Vector3.zero
-
-        -- PC keys
-        if UIS:IsKeyDown(Enum.KeyCode.W)          then dir = dir + cam.CFrame.LookVector  end
-        if UIS:IsKeyDown(Enum.KeyCode.S)          then dir = dir - cam.CFrame.LookVector  end
-        if UIS:IsKeyDown(Enum.KeyCode.A)          then dir = dir - cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D)          then dir = dir + cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.Space)      then dir = dir + Vector3.new(0,1,0)     end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftShift)  then dir = dir - Vector3.new(0,1,0)     end
-
-        -- Mobile keys
-        if mobileKeys.fwd   then dir = dir + cam.CFrame.LookVector  end
-        if mobileKeys.back  then dir = dir - cam.CFrame.LookVector  end
-        if mobileKeys.left  then dir = dir - cam.CFrame.RightVector end
-        if mobileKeys.right then dir = dir + cam.CFrame.RightVector end
-        if mobileKeys.up    then dir = dir + Vector3.new(0,1,0)     end
-        if mobileKeys.down  then dir = dir - Vector3.new(0,1,0)     end
-
-        bodyVel.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W)         then dir=dir+cam.CFrame.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.S)         then dir=dir-cam.CFrame.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.A)         then dir=dir-cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D)         then dir=dir+cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space)     then dir=dir+Vector3.new(0,1,0)     end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir=dir-Vector3.new(0,1,0)     end
+        if mobileKeys.fwd   then dir=dir+cam.CFrame.LookVector  end
+        if mobileKeys.back  then dir=dir-cam.CFrame.LookVector  end
+        if mobileKeys.left  then dir=dir-cam.CFrame.RightVector end
+        if mobileKeys.right then dir=dir+cam.CFrame.RightVector end
+        if mobileKeys.up    then dir=dir+Vector3.new(0,1,0)     end
+        if mobileKeys.down  then dir=dir-Vector3.new(0,1,0)     end
+        bodyVel.Velocity = dir.Magnitude>0 and dir.Unit*flySpeed or Vector3.zero
         bodyGyro.CFrame  = cam.CFrame
     end)
 end
 
--- Override StartFly/StopFly
-StartFly = StartFlyMobile
-local _origStop = StopFly
-StopFly = function()
-    _origStop()
+local function StopFly()
+    if flyConn then flyConn:Disconnect(); flyConn=nil end
+    if bodyVel  then bodyVel:Destroy();  bodyVel=nil  end
+    if bodyGyro then bodyGyro:Destroy(); bodyGyro=nil end
     MobileGui.Enabled = false
-    for k in pairs(mobileKeys) do mobileKeys[k] = false end
+    for k in pairs(mobileKeys) do mobileKeys[k]=false end
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then hum.PlatformStand=false; hum.JumpPower=50 end
+    end
 end
--- ================================================================
-local Players     = game:GetService("Players")
-local RunService  = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
 
+MainTab:AddSection("Di chuyển")
+MainTab:AddToggle("fly_toggle",{
+    Title="Fly", Description="Bật/tắt bay tự do (W A S D + Space + Shift)", Default=false,
+    Callback=function(val) if val then StartFly() else StopFly() end end
+})
+MainTab:AddSlider("fly_speed",{
+    Title="Tốc độ bay", Min=10, Max=300, Default=60, Rounding=1,
+    Callback=function(val) flySpeed=val end
+})
+MainTab:AddButton({
+    Title="click to tp", Description="Script cho tool TP khi bấm vào vị trí",
+    Callback=function() loadstring(game:HttpGet("https://pastefy.app/lpQi8X5W/raw"))() end
+})
+MainTab:AddButton({
+    Title="nocilp", Description="Script giúp bạn đi xuyên vật thể",
+    Callback=function() loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))() end
+})
+
+-- ================================================================
+-- QUICK TELE
+-- ================================================================
 local QT_Waypoints = {}
 local QT_Names     = {}
 local QT_Count     = 0
@@ -274,172 +142,108 @@ local QT_Selected  = nil
 local QT_SelPlayer = nil
 
 local function SmoothTP(cf)
-    local ch  = LocalPlayer.Character; if not ch then return end
+    local ch = LocalPlayer.Character; if not ch then return end
     local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
     local hum = ch:FindFirstChild("Humanoid")
-    if hum then hum.WalkSpeed = 0 end
+    if hum then hum.WalkSpeed=0 end
     local orig = hrp.CFrame
-    for i = 1, 10 do hrp.CFrame = orig:Lerp(cf, i/10); RunService.Heartbeat:Wait() end
-    if hum then hum.WalkSpeed = 16 end
+    for i=1,10 do hrp.CFrame=orig:Lerp(cf,i/10); RunService.Heartbeat:Wait() end
+    if hum then hum.WalkSpeed=16 end
 end
 
--- ── Section Waypoints ──────────────────────────────────────
 TeleTab:AddSection("Waypoints")
 
--- Dropdown 2: Chọn điểm (khai báo trước nút 1)
-local WPDropdown = TeleTab:AddDropdown("wp_dropdown", {
-    Title       = "2 · Chọn điểm đã lưu",
-    Description = "Chọn điểm muốn teleport tới",
-    Values      = {},
-    Multi       = false,
-    Default     = nil,
-    Callback    = function(val)
-        for id, name in pairs(QT_Names) do
-            if name == val then QT_Selected = id; break end
+local WPDropdown = TeleTab:AddDropdown("wp_dropdown",{
+    Title="2 · Chọn điểm đã lưu", Description="Chọn điểm muốn teleport tới",
+    Values={}, Multi=false, Default=nil,
+    Callback=function(val)
+        for id,name in pairs(QT_Names) do
+            if name==val then QT_Selected=id; break end
         end
     end
 })
 
--- Hàm refresh dropdown (phải định nghĩa sau WPDropdown)
 local function RefreshWPDropdown()
-    local vals, ids = {}, {}
-    for id in pairs(QT_Waypoints) do table.insert(ids, id) end
+    local vals,ids={},{}
+    for id in pairs(QT_Waypoints) do table.insert(ids,id) end
     table.sort(ids)
-    for _, id in ipairs(ids) do
-        table.insert(vals, QT_Names[id] or "Điểm "..id)
-    end
+    for _,id in ipairs(ids) do table.insert(vals, QT_Names[id] or "Điểm "..id) end
     WPDropdown:SetValues(vals)
-    if #vals > 0 then
-        WPDropdown:SetValue(vals[#vals])
-        QT_Selected = ids[#ids]
-    end
+    if #vals>0 then WPDropdown:SetValue(vals[#vals]); QT_Selected=ids[#ids] end
 end
 
--- Nút 1: Lưu vị trí
 TeleTab:AddButton({
-    Title       = "1 · Lưu vị trí hiện tại",
-    Description = "Lưu chỗ đang đứng vào danh sách",
-    Callback    = function()
-        local ch  = LocalPlayer.Character; if not ch then return end
-        local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-        QT_Count = QT_Count + 1
-        QT_Waypoints[QT_Count] = hrp.CFrame
-        QT_Names[QT_Count]     = "Điểm " .. QT_Count
-        QT_Selected            = QT_Count
-        RefreshWPDropdown()
-        Fluent:Notify({
-            Title   = "Đã lưu",
-            Content = "Điểm " .. QT_Count .. " đã được lưu",
-            Duration = 3,
-        })
+    Title="1 · Lưu vị trí hiện tại", Description="Lưu chỗ đang đứng vào danh sách",
+    Callback=function()
+        local ch=LocalPlayer.Character; if not ch then return end
+        local hrp=ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        QT_Count=QT_Count+1
+        QT_Waypoints[QT_Count]=hrp.CFrame; QT_Names[QT_Count]="Điểm "..QT_Count
+        QT_Selected=QT_Count; RefreshWPDropdown()
+        Fluent:Notify({Title="Đã lưu", Content="Điểm "..QT_Count.." đã được lưu", Duration=3})
     end
 })
 
--- Nút 3: Teleport
 TeleTab:AddButton({
-    Title       = "3 · Teleport tới điểm đã chọn",
-    Description = "Dịch chuyển tới điểm đang chọn",
-    Callback    = function()
+    Title="3 · Teleport tới điểm đã chọn", Description="Dịch chuyển tới điểm đang chọn",
+    Callback=function()
         if not QT_Selected or not QT_Waypoints[QT_Selected] then
-            Fluent:Notify({Title="Chưa chọn điểm!", Content="Bấm nút 2 để chọn trước", Duration=3})
-            return
+            Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3}); return
         end
         SmoothTP(QT_Waypoints[QT_Selected])
-        Fluent:Notify({
-            Title   = "Đã tele",
-            Content = "→ " .. (QT_Names[QT_Selected] or "Điểm "..QT_Selected),
-            Duration = 3,
-        })
+        Fluent:Notify({Title="Đã tele", Content="→ "..(QT_Names[QT_Selected] or "Điểm "..QT_Selected), Duration=3})
     end
 })
 
--- Input 4: Đổi tên — sau khi nhập xong tự refresh dropdown luôn
-local RenameInput = TeleTab:AddInput("rename_input", {
-    Title       = "4 · Đổi tên điểm đã chọn",
-    Description = "Nhập tên mới rồi bấm Enter",
-    Placeholder = "Nhập tên mới...",
-    Numeric     = false,
-    Finished    = true,
-    Callback    = function(val)
-        if not QT_Selected then
-            Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3})
-            return
-        end
-        if val == "" then
-            Fluent:Notify({Title="Tên trống!", Content="Nhập tên hợp lệ", Duration=3})
-            return
-        end
-        local old = QT_Names[QT_Selected]
-        QT_Names[QT_Selected] = val
-        RefreshWPDropdown()   -- cập nhật dropdown ngay
-        Fluent:Notify({
-            Title   = "Đã đổi tên",
-            Content = old .. " → " .. val,
-            Duration = 3,
-        })
+TeleTab:AddInput("rename_input",{
+    Title="4 · Đổi tên điểm đã chọn", Description="Nhập tên mới rồi bấm Enter",
+    Placeholder="Nhập tên mới...", Numeric=false, Finished=true,
+    Callback=function(val)
+        if not QT_Selected then Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3}); return end
+        if val=="" then Fluent:Notify({Title="Tên trống!", Content="Nhập tên hợp lệ", Duration=3}); return end
+        local old=QT_Names[QT_Selected]; QT_Names[QT_Selected]=val; RefreshWPDropdown()
+        Fluent:Notify({Title="Đã đổi tên", Content=old.." → "..val, Duration=3})
     end
 })
 
--- Nút xóa điểm đang chọn
 TeleTab:AddButton({
-    Title       = "🗑 Xóa điểm đang chọn",
-    Description = "Xóa điểm đã chọn ở dropdown khỏi danh sách",
-    Callback    = function()
-        if not QT_Selected then
-            Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3})
-            return
-        end
-        local name = QT_Names[QT_Selected] or "Điểm "..QT_Selected
-        QT_Waypoints[QT_Selected] = nil
-        QT_Names[QT_Selected]     = nil
-        QT_Selected               = nil
+    Title="🗑 Xóa điểm đang chọn", Description="Xóa điểm đã chọn khỏi danh sách",
+    Callback=function()
+        if not QT_Selected then Fluent:Notify({Title="Chưa chọn điểm!", Content="Chọn điểm ở dropdown trước", Duration=3}); return end
+        local name=QT_Names[QT_Selected] or "Điểm "..QT_Selected
+        QT_Waypoints[QT_Selected]=nil; QT_Names[QT_Selected]=nil; QT_Selected=nil
         RefreshWPDropdown()
         Fluent:Notify({Title="Đã xóa", Content=name, Duration=3})
     end
 })
 
--- Nút reset toàn bộ danh sách
 TeleTab:AddButton({
-    Title       = "⚠ Reset toàn bộ danh sách",
-    Description = "Xóa hết tất cả các điểm đã lưu",
-    Callback    = function()
-        QT_Waypoints = {}
-        QT_Names     = {}
-        QT_Count     = 0
-        QT_Selected  = nil
+    Title="⚠ Reset toàn bộ danh sách", Description="Xóa hết tất cả các điểm đã lưu",
+    Callback=function()
+        QT_Waypoints={}; QT_Names={}; QT_Count=0; QT_Selected=nil
         WPDropdown:SetValues({})
         Fluent:Notify({Title="Đã reset", Content="Danh sách điểm đã được xóa sạch", Duration=3})
     end
 })
 
--- ── Section Players ────────────────────────────────────────
 TeleTab:AddSection("Players")
 
--- Dropdown 5: Chọn player
-local PlrDropdown = TeleTab:AddDropdown("plr_dropdown", {
-    Title       = "5 · Chọn player",
-    Description = "Chọn player muốn teleport tới",
-    Values      = {},
-    Multi       = false,
-    Default     = nil,
-    Callback    = function(val)
-        QT_SelPlayer = val
-    end
+local PlrDropdown = TeleTab:AddDropdown("plr_dropdown",{
+    Title="5 · Chọn player", Description="Chọn player muốn teleport/quan sát",
+    Values={}, Multi=false, Default=nil,
+    Callback=function(val) QT_SelPlayer=val end
 })
 
--- Nút refresh danh sách player
 TeleTab:AddButton({
-    Title       = "↺ Làm mới danh sách player",
-    Description = "Cập nhật danh sách player trong server",
-    Callback    = function()
-        local vals = {}
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer then table.insert(vals, plr.Name) end
+    Title="↺ Làm mới danh sách player", Description="Cập nhật danh sách player trong server",
+    Callback=function()
+        local vals={}
+        for _,plr in ipairs(Players:GetPlayers()) do
+            if plr~=LocalPlayer then table.insert(vals,plr.Name) end
         end
         PlrDropdown:SetValues(vals)
-        if #vals > 0 then
-            PlrDropdown:SetValue(vals[1])
-            QT_SelPlayer = vals[1]
+        if #vals>0 then
+            PlrDropdown:SetValue(vals[1]); QT_SelPlayer=vals[1]
             Fluent:Notify({Title="Đã làm mới", Content=#vals.." player trong server", Duration=3})
         else
             Fluent:Notify({Title="Không có player", Content="Không ai trong server", Duration=3})
@@ -447,291 +251,251 @@ TeleTab:AddButton({
     end
 })
 
--- Nút 6: Tele tới player
 TeleTab:AddButton({
-    Title       = "6 · Teleport tới player đã chọn",
-    Description = "Dịch chuyển tới player đang chọn",
-    Callback    = function()
-        if not QT_SelPlayer then
-            Fluent:Notify({Title="Chưa chọn player!", Content="Chọn player ở dropdown trước", Duration=3})
+    Title="6 · Teleport tới player đã chọn", Description="Dịch chuyển tới player đang chọn",
+    Callback=function()
+        if not QT_SelPlayer then Fluent:Notify({Title="Chưa chọn player!", Content="Chọn player ở dropdown trước", Duration=3}); return end
+        local plr=Players:FindFirstChild(QT_SelPlayer)
+        if not plr then Fluent:Notify({Title="Player đã rời!", Content=QT_SelPlayer.." không còn trong server", Duration=3}); QT_SelPlayer=nil; return end
+        local ch=plr.Character; if not ch then return end
+        local hrp=ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        SmoothTP(hrp.CFrame+Vector3.new(3,0,0))
+        Fluent:Notify({Title="Đã tele", Content="→ "..QT_SelPlayer, Duration=3})
+    end
+})
+
+-- Quan sát player
+local spectating    = false
+local spectateConn  = nil
+local spectateName  = nil
+
+TeleTab:AddButton({
+    Title="👁 Quan sát player đã chọn", Description="Camera nhìn theo player đang chọn",
+    Callback=function()
+        if spectating then
+            -- Tắt quan sát
+            if spectateConn then spectateConn:Disconnect(); spectateConn=nil end
+            spectating=false; spectateName=nil
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") or nil
+            Fluent:Notify({Title="Đã tắt quan sát", Content="Camera về bình thường", Duration=3})
             return
         end
-        local plr = Players:FindFirstChild(QT_SelPlayer)
-        if not plr then
-            Fluent:Notify({Title="Player đã rời!", Content=QT_SelPlayer.." không còn trong server", Duration=3})
-            QT_SelPlayer = nil; return
+        if not QT_SelPlayer then
+            Fluent:Notify({Title="Chưa chọn player!", Content="Chọn player ở dropdown trước", Duration=3}); return
         end
-        local ch  = plr.Character; if not ch then return end
-        local hrp = ch:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-        SmoothTP(hrp.CFrame + Vector3.new(3, 0, 0))
-        Fluent:Notify({
-            Title   = "Đã tele",
-            Content = "→ " .. QT_SelPlayer,
-            Duration = 3,
-        })
+        local plr=Players:FindFirstChild(QT_SelPlayer)
+        if not plr then
+            Fluent:Notify({Title="Player đã rời!", Content=QT_SelPlayer.." không còn", Duration=3}); return
+        end
+        local ch=plr.Character
+        if not ch then Fluent:Notify({Title="Lỗi!", Content="Character không tồn tại", Duration=3}); return end
+        local hum=ch:FindFirstChild("Humanoid")
+        if not hum then return end
+        spectating=true; spectateName=QT_SelPlayer
+        workspace.CurrentCamera.CameraType    = Enum.CameraType.Custom
+        workspace.CurrentCamera.CameraSubject = hum
+        Fluent:Notify({Title="Đang quan sát", Content=QT_SelPlayer.." · Bấm lại để tắt", Duration=4})
+        -- Tự tắt nếu player rời game
+        spectateConn = Players.PlayerRemoving:Connect(function(p)
+            if p.Name==spectateName then
+                spectateConn:Disconnect(); spectateConn=nil; spectating=false
+                workspace.CurrentCamera.CameraType=Enum.CameraType.Custom
+                local myChar=LocalPlayer.Character
+                workspace.CurrentCamera.CameraSubject = myChar and myChar:FindFirstChild("Humanoid") or nil
+                Fluent:Notify({Title="Player đã rời!", Content=spectateName.." đã rời game", Duration=3})
+            end
+        end)
     end
 })
 
 -- ================================================================
--- NỘI DUNG ESP
+-- ESP
 -- ================================================================
+local Camera   = workspace.CurrentCamera
+local espGui   = Instance.new("ScreenGui")
+espGui.Name    = "ESPGui"; espGui.ResetOnSpawn=false
+espGui.DisplayOrder = 999  -- ← cao nhất để không bị che
+espGui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
+espGui.Parent  = CoreGui
 
-local Camera    = workspace.CurrentCamera
-local espGui    = Instance.new("ScreenGui")
-espGui.Name     = "ESPGui"
-espGui.ResetOnSpawn = false
-espGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-espGui.Parent   = game:GetService("CoreGui")
+local espEnabled  = false
+local nameEnabled = false
+local boxEnabled  = false
+local lineEnabled = false
+local hlEnabled   = false
+local espColor    = Color3.fromRGB(255,60,60)
+local teamCheck   = false
+local espObjects  = {}
 
--- ESP state
-local espEnabled   = false
-local nameEnabled  = false
-local boxEnabled   = false
-local lineEnabled  = false
-local hlEnabled    = false
-
-local espColor     = Color3.fromRGB(255, 60, 60)
-local teamCheck    = false
-
--- Lưu các object ESP theo player
-local espObjects = {}  -- [player] = { highlight, billboardGui, lineFrame }
-
--- ── Helpers ─────────────────────────────────────────────────
 local function GetTeamColor(plr)
     if plr.Team then return plr.TeamColor.Color end
     return espColor
 end
-
 local function ShouldSkip(plr)
-    if plr == LocalPlayer then return true end
-    if teamCheck and plr.Team == LocalPlayer.Team then return true end
+    if plr==LocalPlayer then return true end
+    if teamCheck and plr.Team==LocalPlayer.Team then return true end
     return false
 end
 
--- ── Tạo ESP cho 1 player ────────────────────────────────────
 local function CreateESP(plr)
     if espObjects[plr] then return end
     local obj = {}
 
-    -- 1. Highlight
+    -- Highlight
     local hl = Instance.new("Highlight")
-    hl.Name            = "ESP_Highlight"
-    hl.FillColor       = espColor
-    hl.OutlineColor    = espColor
-    hl.FillTransparency    = 0.6
-    hl.OutlineTransparency = 0
-    hl.DepthMode       = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.Enabled         = hlEnabled
-    obj.highlight      = hl
+    hl.FillColor=espColor; hl.OutlineColor=espColor
+    hl.FillTransparency=0.6; hl.OutlineTransparency=0
+    hl.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop; hl.Enabled=hlEnabled
+    obj.highlight=hl
 
-    -- 2. BillboardGui (name + distance)
+    -- Billboard
     local bb = Instance.new("BillboardGui")
-    bb.Name            = "ESP_Billboard"
-    bb.AlwaysOnTop     = true
-    bb.Size            = UDim2.new(0, 120, 0, 40)
-    bb.StudsOffset     = Vector3.new(0, 3, 0)
-    bb.Enabled         = nameEnabled
+    bb.AlwaysOnTop=true; bb.Size=UDim2.new(0,120,0,40)
+    bb.StudsOffset=Vector3.new(0,3,0); bb.Enabled=nameEnabled
+    local nl=Instance.new("TextLabel",bb); nl.Size=UDim2.new(1,0,0.6,0)
+    nl.BackgroundTransparency=1; nl.Text=plr.Name; nl.TextColor3=espColor
+    nl.TextSize=13; nl.Font=Enum.Font.GothamBold
+    nl.TextStrokeTransparency=0; nl.TextStrokeColor3=Color3.fromRGB(0,0,0)
+    local dl=Instance.new("TextLabel",bb); dl.Size=UDim2.new(1,0,0.4,0)
+    dl.Position=UDim2.new(0,0,0.6,0); dl.BackgroundTransparency=1; dl.Text=""
+    dl.TextColor3=Color3.fromRGB(255,220,100); dl.TextSize=11; dl.Font=Enum.Font.Gotham
+    dl.TextStrokeTransparency=0; dl.TextStrokeColor3=Color3.fromRGB(0,0,0)
+    obj.billboard=bb; obj.nameLbl=nl; obj.distLbl=dl
 
-    local nameLbl = Instance.new("TextLabel", bb)
-    nameLbl.Name       = "NameLbl"
-    nameLbl.Size       = UDim2.new(1, 0, 0.6, 0)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.Text       = plr.Name
-    nameLbl.TextColor3 = espColor
-    nameLbl.TextSize   = 13
-    nameLbl.Font       = Enum.Font.GothamBold
-    nameLbl.TextStrokeTransparency = 0
-    nameLbl.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-
-    local distLbl = Instance.new("TextLabel", bb)
-    distLbl.Name       = "DistLbl"
-    distLbl.Size       = UDim2.new(1, 0, 0.4, 0)
-    distLbl.Position   = UDim2.new(0, 0, 0.6, 0)
-    distLbl.BackgroundTransparency = 1
-    distLbl.Text       = ""
-    distLbl.TextColor3 = Color3.fromRGB(255, 220, 100)
-    distLbl.TextSize   = 11
-    distLbl.Font       = Enum.Font.Gotham
-    distLbl.TextStrokeTransparency = 0
-    distLbl.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-
-    obj.billboard  = bb
-    obj.nameLbl    = nameLbl
-    obj.distLbl    = distLbl
-
-    -- 3. Box ESP (Frame 2D)
-    local box = Instance.new("Frame", espGui)
-    box.Name               = "ESP_Box_"..plr.Name
-    box.BackgroundTransparency = 1
-    box.BorderSizePixel    = 0
-    box.Visible            = false
-    -- 4 viền
-    local function MkLine(parent)
-        local l = Instance.new("Frame", parent)
-        l.BackgroundColor3 = espColor
-        l.BorderSizePixel  = 0
-        return l
+    -- Box (4 viền riêng biệt)
+    local box=Instance.new("Frame",espGui)
+    box.BackgroundTransparency=1; box.BorderSizePixel=0; box.Visible=false
+    box.ZIndex=10
+    local function MkEdge()
+        local f=Instance.new("Frame",box)
+        f.BackgroundColor3=espColor; f.BorderSizePixel=0; f.ZIndex=11
+        return f
     end
-    local bTop    = MkLine(box); bTop.Size    = UDim2.new(1,0,0,2); bTop.Position = UDim2.new(0,0,0,0)
-    local bBot    = MkLine(box); bBot.Size    = UDim2.new(1,0,0,2); bBot.Position = UDim2.new(0,0,1,-2)
-    local bLeft   = MkLine(box); bLeft.Size   = UDim2.new(0,2,1,0); bLeft.Position= UDim2.new(0,0,0,0)
-    local bRight  = MkLine(box); bRight.Size  = UDim2.new(0,2,1,0); bRight.Position=UDim2.new(1,-2,0,0)
-    obj.box = box
+    local eT=MkEdge(); local eB=MkEdge(); local eL=MkEdge(); local eR=MkEdge()
+    obj.box=box; obj.edges={eT,eB,eL,eR}
 
-    -- 4. Tracer line
-    local line = Instance.new("Frame", espGui)
-    line.Name              = "ESP_Line_"..plr.Name
-    line.BackgroundColor3  = espColor
-    line.BorderSizePixel   = 0
-    line.AnchorPoint       = Vector2.new(0.5, 0)
-    line.Visible           = false
-    obj.line = line
+    -- Tracer
+    local line=Instance.new("Frame",espGui)
+    line.BackgroundColor3=espColor; line.BorderSizePixel=0
+    line.AnchorPoint=Vector2.new(0.5,0); line.Visible=false; line.ZIndex=10
+    obj.line=line
 
-    espObjects[plr] = obj
+    espObjects[plr]=obj
 
-    -- Pasang ke character
-    local function Attach(char)
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hl.Parent   = char
-            bb.Adornee  = hrp
-            bb.Parent   = hrp
-        end
+    local function Attach(ch)
+        if not ch then return end
+        local hrp=ch:FindFirstChild("HumanoidRootPart")
+        if hrp then hl.Parent=ch; bb.Adornee=hrp; bb.Parent=hrp end
     end
-
     Attach(plr.Character)
     plr.CharacterAdded:Connect(Attach)
 end
 
--- ── Hapus ESP 1 player ──────────────────────────────────────
 local function RemoveESP(plr)
-    local obj = espObjects[plr]
-    if not obj then return end
+    local obj=espObjects[plr]; if not obj then return end
     if obj.highlight and obj.highlight.Parent then obj.highlight:Destroy() end
     if obj.billboard and obj.billboard.Parent then obj.billboard:Destroy() end
     if obj.box  then obj.box:Destroy()  end
     if obj.line then obj.line:Destroy() end
-    espObjects[plr] = nil
+    espObjects[plr]=nil
 end
 
--- ── Update loop ─────────────────────────────────────────────
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
-    local myChar = LocalPlayer.Character
-    local myHRP  = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local camPos = Camera.CFrame.Position
-    local vp     = Camera.ViewportSize
+    local myChar=LocalPlayer.Character
+    local myHRP=myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local vp=Camera.ViewportSize
 
-    for plr, obj in pairs(espObjects) do
-        if not plr or not plr.Parent then
-            RemoveESP(plr); continue
-        end
+    for plr,obj in pairs(espObjects) do
+        if not plr or not plr.Parent then RemoveESP(plr); continue end
         if ShouldSkip(plr) then continue end
 
-        local char = plr.Character
-        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-        local head = char and char:FindFirstChild("Head")
+        local ch=plr.Character
+        local hrp=ch and ch:FindFirstChild("HumanoidRootPart")
+        local head=ch and ch:FindFirstChild("Head")
 
-        -- Khoảng cách
-        local dist = 0
-        if myHRP and hrp then
-            dist = math.floor((hrp.Position - myHRP.Position).Magnitude)
-        end
+        local dist=0
+        if myHRP and hrp then dist=math.floor((hrp.Position-myHRP.Position).Magnitude) end
 
-        -- Update name/dist label
-        if obj.nameLbl then
-            obj.nameLbl.TextColor3 = teamCheck and GetTeamColor(plr) or espColor
-        end
-        if obj.distLbl and hrp then
-            obj.distLbl.Text = dist.."m"
-        end
-        if obj.billboard then
-            obj.billboard.Enabled = nameEnabled and hrp ~= nil
-        end
+        if obj.nameLbl then obj.nameLbl.TextColor3=teamCheck and GetTeamColor(plr) or espColor end
+        if obj.distLbl and hrp then obj.distLbl.Text=dist.."m" end
+        if obj.billboard then obj.billboard.Enabled=nameEnabled and hrp~=nil end
         if obj.highlight then
-            obj.highlight.Enabled      = hlEnabled and char ~= nil
-            obj.highlight.FillColor    = teamCheck and GetTeamColor(plr) or espColor
-            obj.highlight.OutlineColor = teamCheck and GetTeamColor(plr) or espColor
+            obj.highlight.Enabled=hlEnabled and ch~=nil
+            local col=teamCheck and GetTeamColor(plr) or espColor
+            obj.highlight.FillColor=col; obj.highlight.OutlineColor=col
         end
 
-        -- Box + Line
         if hrp and head then
-            local headWorld = head.Position + Vector3.new(0, 0.5, 0)
-            local feetWorld = hrp.Position  - Vector3.new(0, 3.2, 0)
+            -- Lấy tọa độ viewport
+            local hV = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.5,0))
+            local fV = Camera:WorldToViewportPoint(hrp.Position  - Vector3.new(0,3.2,0))
+            local rV = Camera:WorldToViewportPoint(hrp.Position)
 
-            local headPos = Camera:WorldToViewportPoint(headWorld)
-            local feetPos = Camera:WorldToViewportPoint(feetWorld)
-            local rootPos = Camera:WorldToViewportPoint(hrp.Position)
+            if hV.Z > 0 and fV.Z > 0 then
+                local col = teamCheck and GetTeamColor(plr) or espColor
 
-            -- Chỉ vẽ khi trước mặt camera (Z > 0)
-            local inFront = headPos.Z > 0 and feetPos.Z > 0
-
-            if inFront then
                 -- BOX
                 if boxEnabled then
-                    local top  = math.min(headPos.Y, feetPos.Y)
-                    local bot  = math.max(headPos.Y, feetPos.Y)
-                    local h2d  = math.max(bot - top, 10)
-                    local w2d  = math.max(h2d * 0.5, 14)
-                    local col  = teamCheck and GetTeamColor(plr) or espColor
-                    obj.box.Position = UDim2.new(0, rootPos.X - w2d/2, 0, top)
-                    obj.box.Size     = UDim2.new(0, w2d, 0, h2d)
-                    for _, f in ipairs(obj.box:GetChildren()) do
-                        if f:IsA("Frame") then f.BackgroundColor3 = col end
-                    end
-                    obj.box.Visible = true
+                    local top  = math.min(hV.Y, fV.Y)
+                    local bot  = math.max(hV.Y, fV.Y)
+                    local h2d  = math.max(bot-top, 8)
+                    local w2d  = math.max(h2d*0.5, 12)
+                    local lx   = rV.X - w2d/2
+
+                    obj.box.Position = UDim2.fromOffset(lx, top)
+                    obj.box.Size     = UDim2.fromOffset(w2d, h2d)
+
+                    local eT,eB,eL,eR = obj.edges[1],obj.edges[2],obj.edges[3],obj.edges[4]
+                    -- Top
+                    eT.Position=UDim2.fromOffset(0,0);       eT.Size=UDim2.fromOffset(w2d,2)
+                    -- Bottom
+                    eB.Position=UDim2.fromOffset(0,h2d-2);   eB.Size=UDim2.fromOffset(w2d,2)
+                    -- Left
+                    eL.Position=UDim2.fromOffset(0,0);       eL.Size=UDim2.fromOffset(2,h2d)
+                    -- Right
+                    eR.Position=UDim2.fromOffset(w2d-2,0);   eR.Size=UDim2.fromOffset(2,h2d)
+
+                    for _,e in ipairs(obj.edges) do e.BackgroundColor3=col end
+                    obj.box.Visible=true
                 else
-                    obj.box.Visible = false
+                    obj.box.Visible=false
                 end
 
                 -- TRACER
                 if lineEnabled then
-                    local col  = teamCheck and GetTeamColor(plr) or espColor
-                    local sx   = vp.X / 2
-                    local sy   = vp.Y
-                    local ex   = feetPos.X
-                    local ey   = feetPos.Y
-                    local dx   = ex - sx
-                    local dy   = ey - sy
-                    local len  = math.sqrt(dx*dx + dy*dy)
+                    local sx = vp.X/2
+                    local sy = vp.Y
+                    local dx = fV.X - sx
+                    local dy = fV.Y - sy
+                    local len = math.sqrt(dx*dx + dy*dy)
                     if len > 1 then
-                        obj.line.AnchorPoint      = Vector2.new(0.5, 0)
-                        obj.line.Position         = UDim2.new(0, sx, 0, sy)
-                        obj.line.Size             = UDim2.new(0, 2, 0, len)
-                        obj.line.Rotation         = math.deg(math.atan2(dy, dx)) + 90
+                        obj.line.Position  = UDim2.fromOffset(sx, sy)
+                        obj.line.Size      = UDim2.fromOffset(2, len)
+                        obj.line.Rotation  = math.deg(math.atan2(dy,dx)) + 90
                         obj.line.BackgroundColor3 = col
-                        obj.line.ZIndex           = 5
-                        obj.line.Visible          = true
+                        obj.line.Visible   = true
                     end
                 else
-                    obj.line.Visible = false
+                    obj.line.Visible=false
                 end
             else
-                obj.box.Visible  = false
-                obj.line.Visible = false
+                obj.box.Visible=false; obj.line.Visible=false
             end
         end
     end
 end)
 
--- ── Quản lý player join/leave ────────────────────────────────
-local function OnPlayerAdded(plr)
-    if espEnabled and not ShouldSkip(plr) then
-        CreateESP(plr)
-    end
-end
-local function OnPlayerRemoving(plr)
-    RemoveESP(plr)
-end
-Players.PlayerAdded:Connect(OnPlayerAdded)
-Players.PlayerRemoving:Connect(OnPlayerRemoving)
+Players.PlayerAdded:Connect(function(plr)
+    if espEnabled and not ShouldSkip(plr) then CreateESP(plr) end
+end)
+Players.PlayerRemoving:Connect(function(plr) RemoveESP(plr) end)
 
--- ── Toggle toàn bộ ESP ──────────────────────────────────────
 local function ToggleAllESP(val)
-    espEnabled = val
+    espEnabled=val
     if val then
-        for _, plr in ipairs(Players:GetPlayers()) do
+        for _,plr in ipairs(Players:GetPlayers()) do
             if not ShouldSkip(plr) then CreateESP(plr) end
         end
     else
@@ -739,76 +503,12 @@ local function ToggleAllESP(val)
     end
 end
 
--- ── Fluent UI ────────────────────────────────────────────────
 EspTab:AddSection("Bật tắt")
-
-EspTab:AddToggle("esp_master", {
-    Title    = "ESP",
-    Description = "Bật/tắt toàn bộ ESP",
-    Default  = false,
-    Callback = function(val)
-        ToggleAllESP(val)
-    end
-})
-
-EspTab:AddToggle("esp_highlight", {
-    Title    = "Highlight",
-    Description = "Tô màu nhân vật, nhìn xuyên tường",
-    Default  = false,
-    Callback = function(val)
-        hlEnabled = val
-    end
-})
-
-EspTab:AddToggle("esp_name", {
-    Title    = "Name + Distance",
-    Description = "Hiện tên và khoảng cách phía trên đầu",
-    Default  = false,
-    Callback = function(val)
-        nameEnabled = val
-    end
-})
-
-EspTab:AddToggle("esp_box", {
-    Title    = "Box ESP",
-    Description = "Vẽ khung vuông quanh player",
-    Default  = false,
-    Callback = function(val)
-        boxEnabled = val
-    end
-})
-
-EspTab:AddToggle("esp_line", {
-    Title    = "Tracer Line",
-    Description = "Vẽ đường từ màn hình tới player",
-    Default  = false,
-    Callback = function(val)
-        lineEnabled = val
-    end
-})
-
+EspTab:AddToggle("esp_master",   {Title="ESP",            Description="Bật/tắt toàn bộ ESP",                   Default=false, Callback=function(v) ToggleAllESP(v) end})
+EspTab:AddToggle("esp_highlight",{Title="Highlight",      Description="Tô màu nhân vật, nhìn xuyên tường",     Default=false, Callback=function(v) hlEnabled=v   end})
+EspTab:AddToggle("esp_name",     {Title="Name + Distance",Description="Hiện tên và khoảng cách phía trên đầu", Default=false, Callback=function(v) nameEnabled=v end})
+EspTab:AddToggle("esp_box",      {Title="Box ESP",        Description="Vẽ khung vuông quanh player",           Default=false, Callback=function(v) boxEnabled=v  end})
+EspTab:AddToggle("esp_line",     {Title="Tracer Line",    Description="Vẽ đường từ màn hình tới player",       Default=false, Callback=function(v) lineEnabled=v end})
 EspTab:AddSection("Tùy chỉnh")
-
-EspTab:AddToggle("esp_team", {
-    Title    = "Team Check",
-    Description = "Bỏ qua đồng đội, màu theo team",
-    Default  = false,
-    Callback = function(val)
-        teamCheck = val
-    end
-})
-
-EspTab:AddColorpicker("esp_color", {
-    Title    = "Màu ESP",
-    Default  = Color3.fromRGB(255, 60, 60),
-    Callback = function(val)
-        espColor = val
-    end
-})
-MainTab:AddButton({
-    Title = "hitbox",
-
- Callback = function()
-loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))())
-    end
-})
+EspTab:AddToggle("esp_team",     {Title="Team Check",     Description="Bỏ qua đồng đội, màu theo team",        Default=false, Callback=function(v) teamCheck=v   end})
+EspTab:AddColorpicker("esp_color",{Title="Màu ESP",       Default=Color3.fromRGB(255,60,60),                   Callback=function(v) espColor=v end})
