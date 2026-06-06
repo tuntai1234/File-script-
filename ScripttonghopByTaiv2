@@ -131,7 +131,10 @@ MainTab:AddButton({
     Title="nocilp", Description="Script giúp bạn đi xuyên vật thể",
     Callback=function() loadstring(game:HttpGet("https://obj.wearedevs.net/197981/scripts/roblox%20noclip%20GUI.lua"))() end
 })
-
+MainTab:AddButton({
+    Title="Hitbox",
+    Callback=function() loadstring(game:HttpGet("https://pastefy.app/ItfO0tdg/raw"))() end
+})
 -- ================================================================
 -- QUICK TELE
 -- ================================================================
