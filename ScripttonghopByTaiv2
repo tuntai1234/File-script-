@@ -525,6 +525,7 @@ EspTab:AddColorpicker("esp_color",{Title="Màu ESP",       Default=Color3.fromRG
 -- ================================================================
 local hbEnabled  = false
 local hbSize     = 10
+local hbVisible  = false
 local hbPlayers  = {}
 
 -- Lưu size gốc để restore
@@ -583,11 +584,15 @@ local function StartHitbox()
             if plr.Character then
                 local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    hrp.Size        = Vector3.new(hbSize, hbSize, hbSize)
-                    hrp.Transparency= 0.7
-                    hrp.Material    = Enum.Material.Neon
-                    hrp.BrickColor  = BrickColor.new("Really blue")
-                    hrp.CanCollide  = false
+                    hrp.Size       = Vector3.new(hbSize, hbSize, hbSize)
+                    hrp.CanCollide = false
+                    if hbVisible then
+                        hrp.Transparency = hbTransparency
+                        hrp.Material     = Enum.Material.Neon
+                        hrp.Color        = hbColor
+                    else
+                        hrp.Transparency = 1
+                    end
                 end
             end
         end
@@ -641,21 +646,35 @@ HitboxTab:AddInput("hb_size", {
     end
 })
 
+local hbColor       = Color3.fromRGB(0, 100, 255)
+local hbTransparency = 0.5
+
 HitboxTab:AddToggle("hb_visible", {
     Title       = "Hiện Hitbox",
-    Description = "Bật để thấy hitbox màu xanh, tắt để hitbox ẩn",
+    Description = "Bật để thấy hitbox, tắt để ẩn",
     Default     = false,
+    Callback    = function(val) hbVisible = val end
+})
+
+HitboxTab:AddColorpicker("hb_color", {
+    Title    = "Màu Hitbox",
+    Default  = Color3.fromRGB(0, 100, 255),
+    Callback = function(val) hbColor = val end
+})
+
+HitboxTab:AddInput("hb_trans", {
+    Title       = "Độ trong suốt",
+    Description = "Nhập 0 (đục) đến 1 (ẩn hoàn toàn), mặc định 0.5",
+    Placeholder = "0 - 1",
+    Numeric     = true,
+    Finished    = true,
     Callback    = function(val)
-        -- Đổi transparency realtime
-        RunService.RenderStepped:Connect(function()
-            if not hbEnabled then return end
-            for _, plr in ipairs(hbPlayers) do
-                if plr.Character then
-                    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then hrp.Transparency = val and 0.5 or 1 end
-                end
-            end
-        end)
+        local n = tonumber(val)
+        if not n or n < 0 or n > 1 then
+            Fluent:Notify({Title="Lỗi!", Content="Nhập số từ 0 đến 1", Duration=3}); return
+        end
+        hbTransparency = n
+        Fluent:Notify({Title="Đã đặt", Content="Độ trong suốt: "..n, Duration=3})
     end
 })
 
