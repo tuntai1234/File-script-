@@ -21,7 +21,7 @@ local LocalPlayer = Players.LocalPlayer
 local MainTab    = Window:AddTab({ Title = "Main",       Icon = "home"      })
 local Main2Tab   = Window:AddTab({ Title = "Player",     Icon = "user"      })
 local TeleTab    = Window:AddTab({ Title = "Quick Tele", Icon = "map-pin"   })
-local EspTab     = Window:AddTab({ Title = "ESP",        Icon = "eye"       })
+       
 local HitboxTab  = Window:AddTab({ Title = "Hitbox",     Icon = "crosshair" })
 
 -- ================================================================
@@ -481,75 +481,3 @@ HitboxTab:AddButton({
         Fluent:Notify({Title="Đã làm mới", Content=#hbPlayers.." player trong danh sách", Duration=3})
     end
 })
--- ================================================================
--- AIM BOT (Full Code để chèn vào ScripttonghopByTaiv2 (1).txt)
--- ================================================================
-local AimTab = Window:AddTab({ Title = "Aim Bot", Icon = "target" })
-
--- Khởi tạo POV Circle
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false
-FOVCircle.Thickness = 1.5
-FOVCircle.Radius = 100
-FOVCircle.Color = Color3.fromRGB(0, 255, 0)
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-FOVCircle.ZIndex = 999
-
--- Biến cấu hình
-local AimEnabled, POVEnabled = false, false
-local AimTarget = "All"
-local TargetPart = "Head"
-local Smoothness = 0.1
-local R6Parts = {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
-
--- Hàm tìm mục tiêu gần nhất
-local function GetClosestTarget()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild(TargetPart) then
-            if AimTarget == "All" or plr.Name == AimTarget then
-                local part = plr.Character[TargetPart]
-                local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
-                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                
-                -- Chỉ aim vào người trong vòng tròn POV
-                if onScreen and dist < FOVCircle.Radius then
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        closestPlayer = plr
-                    end
-                end
-            end
-        end
-    end
-    return closestPlayer
-end
-
--- Vòng lặp cập nhật Aim
-RunService.RenderStepped:Connect(function()
-    -- Cập nhật POV vị trí
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    FOVCircle.Visible = POVEnabled
-    
-    -- Thực hiện Aim
-    if AimEnabled then
-        local target = GetClosestTarget()
-        if target and target.Character:FindFirstChild(TargetPart) then
-            local targetPos = target.Character[TargetPart].Position
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPos), Smoothness)
-        end
-    end
-end)
-
--- Giao diện UI
-AimTab:AddSection("Cấu hình Aimbot")
-AimTab:AddToggle("aim_toggle", {Title = "Bật Aimbot", Default = false, Callback = function(v) AimEnabled = v end})
-AimTab:AddToggle("pov_toggle", {Title = "Hiện vòng tròn POV", Default = false, Callback = function(v) POVEnabled = v end})
-AimTab:AddDropdown("part_dropdown", {Title = "Chọn bộ phận Aim", Values = R6Parts, Default = "Head", Callback = function(v) TargetPart = v end})
-AimTab:AddInput("fov_input", {Title = "Bán kính POV", Placeholder = "100", Numeric = true, Finished = true, Callback = function(v) FOVCircle.Radius = tonumber(v) or 100 end})
-AimTab:AddInput("smooth_input", {Title = "Độ mượt (0.1 - 1)", Placeholder = "0.1", Numeric = true, Finished = true, Callback = function(v) Smoothness = tonumber(v) or 0.1 end})
--- ================================================================
--- 
