@@ -685,3 +685,114 @@ HitboxTab:AddButton({
         Fluent:Notify({Title="Đã làm mới", Content=#hbPlayers.." player trong danh sách", Duration=3})
     end
 })
+
+local AimTab = Window:AddTab({ Title = "Aim bot", Icon = "target" })
+local AimEnabled = false
+local AimTarget = nil -- Tên người chơi hoặc "All"
+
+-- Hàm tìm mục tiêu gần nhất hoặc theo tên
+local function GetClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local myChar = game.Players.LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
+
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+            -- Nếu chọn "All" hoặc chọn đúng tên player
+            if AimTarget == "All" or plr.Name == AimTarget then
+                local headPos = plr.Character.Head.Position
+                local screenPos, onScreen = game.Workspace.CurrentCamera:WorldToViewportPoint(headPos)
+                
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(game.Workspace.CurrentCamera.ViewportSize.X/2, game.Workspace.CurrentCamera.ViewportSize.Y/2)).Magnitude
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        closestPlayer = plr
+                    end
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Tab Aim bot
+AimTab:AddSection("Cấu hình")
+
+local AimToggle = AimTab:AddToggle("aim_toggle", {
+    Title = "Bật Aimbot",
+    Default = false,
+    Callback = function(val) AimEnabled = val end
+})
+
+local PlrDropdown = AimTab:AddDropdown("aim_dropdown", {
+    Title = "Chọn mục tiêu",
+    Values = {"All"},
+    Multi = false,
+    Default = "All",
+    Callback = function(val) AimTarget = val end
+})
+
+AimTab:AddButton({
+    Title = "↺ Cập nhật danh sách",
+    Callback = function()
+        local players = {"All"}
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= game.Players.LocalPlayer then
+                table.insert(players, plr.Name)
+            end
+        end
+        PlrDropdown:SetValues(players)
+    end
+})
+
+-- Logic Aimbot chạy liên tục
+game:GetService("RunService").RenderStepped:Connect(function()
+    if AimEnabled then
+        local target = GetClosestTarget()
+        if target and target.Character:FindFirstChild("Head") then
+            game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
+        end
+    end
+end)
+-- Biến cấu hình
+local Smoothness = 0.1 -- Càng cao càng nhanh, càng thấp càng mượt (0.01 - 0.2)
+local POVEnabled = false
+
+-- Thêm vào AimTab
+AimTab:AddSection("Tùy chỉnh Aim")
+
+AimTab:AddSlider("aim_smooth", {
+    Title = "Độ mượt (Smoothing)",
+    Description = "Điều chỉnh độ mượt của Aim",
+    Default = 10,
+    Min = 1,
+    Max = 100,
+    Rounding = 0,
+    Callback = function(val)
+        Smoothness = val / 100 -- Chuyển đổi về tỉ lệ 0.01 - 1
+    end
+})
+
+AimTab:AddToggle("pov_toggle", {
+    Title = "POV Camera",
+    Description = "Camera tự động khóa vào mục tiêu",
+    Default = false,
+    Callback = function(val) POVEnabled = val end
+})
+
+-- Logic Aim & POV chạy liên tục
+game:GetService("RunService").RenderStepped:Connect(function()
+    if (AimEnabled or POVEnabled) then
+        local target = GetClosestTarget()
+        if target and target.Character:FindFirstChild("Head") then
+            local targetPos = target.Character.Head.Position
+            local camera = game.Workspace.CurrentCamera
+            
+            -- Tính toán hướng nhìn mượt mà
+            local lookAt = CFrame.new(camera.CFrame.Position, targetPos)
+            camera.CFrame = camera.CFrame:Lerp(lookAt, Smoothness)
+        end
+    end
+end)
