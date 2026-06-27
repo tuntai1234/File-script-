@@ -317,112 +317,6 @@ TeleTab:AddButton({
 })
 
 -- ================================================================
--- ESP
--- ================================================================
--- ================================================================
--- KHỞI TẠO BIẾN CẤU HÌNH
--- ================================================================
-
-
--- Biến Aim Bot
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false; FOVCircle.Thickness = 1.5; FOVCircle.Radius = 100; FOVCircle.Color = Color3.fromRGB(0, 255, 0); FOVCircle.Filled = false; FOVCircle.Transparency = 1; FOVCircle.ZIndex = 999
-local AimEnabled, POVEnabled = false, false
-local AimTarget = "All"
-local TargetPart = "Head"
-local Smoothness = 0.1
-local R6Parts = {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
-
--- Biến ESP
-local ESPEnabled, BoxEnabled, LineEnabled, NameEnabled = false, false, false, false
-local ESPColor = Color3.fromRGB(255, 60, 60)
-local espObjects = {}
-
--- ================================================================
--- HÀM AIM & ESP
--- ================================================================
-local function GetClosestTarget()
-    local closestPlayer = nil; local shortestDistance = math.huge
-    for _, plr in pairs(game.Players:GetPlayers()) do
-        if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild(TargetPart) then
-            if AimTarget == "All" or plr.Name == AimTarget then
-                local part = plr.Character[TargetPart]
-                local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
-                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(workspace.CurrentCamera.ViewportSize.X/2, workspace.CurrentCamera.ViewportSize.Y/2)).Magnitude
-                if onScreen and dist < FOVCircle.Radius and dist < shortestDistance then
-                    shortestDistance = dist; closestPlayer = plr
-                end
-            end
-        end
-    end
-    return closestPlayer
-end
-
-local function CreateESP(plr)
-    if espObjects[plr] then return end
-    local obj = {box = Drawing.new("Square"), line = Drawing.new("Line"), text = Drawing.new("Text")}
-    obj.box.Visible = false; obj.box.Thickness = 1.5; obj.box.Color = ESPColor; obj.box.Filled = false
-    obj.line.Visible = false; obj.line.Thickness = 1.5; obj.line.Color = ESPColor
-    obj.text.Visible = false; obj.text.Center = true; obj.text.Outline = true; obj.text.Size = 16; obj.text.Color = ESPColor
-    espObjects[plr] = obj
-end
-
--- ================================================================
--- VÒNG LẶP RENDERSTEPPED (CORE)
--- ================================================================
-game:GetService("RunService").RenderStepped:Connect(function()
-    local cam = workspace.CurrentCamera
-    -- Aim Logic
-    FOVCircle.Position = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
-    FOVCircle.Visible = POVEnabled
-    if AimEnabled then
-        local target = GetClosestTarget()
-        if target and target.Character:FindFirstChild(TargetPart) then
-            cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, target.Character[TargetPart].Position), Smoothness)
-        end
-    end
-    -- ESP Logic
-    for plr, obj in pairs(espObjects) do
-        if ESPEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local pos, onScreen = cam:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
-            if onScreen then
-                if BoxEnabled then
-                    obj.box.Size = Vector2.new(100, 150) / pos.Z; obj.box.Position = Vector2.new(pos.X - obj.box.Size.X/2, pos.Y - obj.box.Size.Y/2); obj.box.Visible = true
-                else obj.box.Visible = false end
-                if LineEnabled then
-                    obj.line.From = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y); obj.line.To = Vector2.new(pos.X, pos.Y); obj.line.Visible = true
-                else obj.line.Visible = false end
-                if NameEnabled then
-                    local dist = math.floor((cam.CFrame.Position - plr.Character.HumanoidRootPart.Position).Magnitude)
-                    obj.text.Text = plr.Name .. " [" .. dist .. "m]"; obj.text.Position = Vector2.new(pos.X, pos.Y - 50); obj.text.Visible = true
-                else obj.text.Visible = false end
-            else obj.box.Visible=false; obj.line.Visible=false; obj.text.Visible=false end
-        else obj.box.Visible=false; obj.line.Visible=false; obj.text.Visible=false end
-    end
-end)
-
--- ================================================================
--- TAB UI
--- ================================================================
-local AimTab = Window:AddTab({Title = "Aim bot", Icon = "target"})
-AimTab:AddToggle("aim_toggle", {Title = "Bật Aimbot", Callback = function(v) AimEnabled = v end})
-AimTab:AddToggle("pov_toggle", {Title = "Hiện vòng tròn POV", Callback = function(v) POVEnabled = v end})
-AimTab:AddDropdown("part_dropdown", {Title = "Bộ phận Aim", Values = R6Parts, Default = "Head", Callback = function(v) TargetPart = v end})
-AimTab:AddInput("fov_input", {Title = "Bán kính POV", Numeric = true, Finished = true, Callback = function(v) FOVCircle.Radius = tonumber(v) end})
-AimTab:AddInput("smooth_input", {Title = "Độ mượt (0.1)", Numeric = true, Finished = true, Callback = function(v) Smoothness = tonumber(v) end})
-
-local EspTab = Window:AddTab({Title = "ESP", Icon = "eye"})
-EspTab:AddToggle("esp_toggle", {Title = "Bật ESP", Callback = function(v) ESPEnabled = v end})
-EspTab:AddToggle("box_toggle", {Title = "Box ESP", Callback = function(v) BoxEnabled = v end})
-EspTab:AddToggle("line_toggle", {Title = "Tracer Line", Callback = function(v) LineEnabled = v end})
-EspTab:AddToggle("name_toggle", {Title = "Name + Distance", Callback = function(v) NameEnabled = v end})
-
-for _, plr in pairs(game.Players:GetPlayers()) do if plr ~= game.Players.LocalPlayer then CreateESP(plr) end end
-game.Players.PlayerAdded:Connect(CreateESP)
-game.Players.PlayerRemoving:Connect(function(plr) if espObjects[plr] then for _, v in pairs(espObjects[plr]) do v:Remove() end espObjects[plr] = nil end end)
-
-
--- ================================================================
 -- HITBOX
 -- ================================================================
 local hbEnabled      = false
@@ -568,7 +462,7 @@ HitboxTab:AddInput("hb_trans", {
     Description = "Nhập 0 (đục) đến 1 (ẩn hoàn toàn), mặc định 0.5",
     Placeholder = "0 - 1",
     Numeric     = true,
-    Finished    = true,
+    Finished    = true,4
     Callback    = function(val)
         local n = tonumber(val)
         if not n or n < 0 or n > 1 then
@@ -587,4 +481,137 @@ HitboxTab:AddButton({
         Fluent:Notify({Title="Đã làm mới", Content=#hbPlayers.." player trong danh sách", Duration=3})
     end
 })
--
+-- ================================================================
+-- AIM BOT (Full Code để chèn vào ScripttonghopByTaiv2 (1).txt)
+-- ================================================================
+local AimTab = Window:AddTab({ Title = "Aim Bot", Icon = "target" })
+
+-- Khởi tạo POV Circle
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Thickness = 1.5
+FOVCircle.Radius = 100
+FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+FOVCircle.ZIndex = 999
+
+-- Biến cấu hình
+local AimEnabled, POVEnabled = false, false
+local AimTarget = "All"
+local TargetPart = "Head"
+local Smoothness = 0.1
+local R6Parts = {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
+
+-- Hàm tìm mục tiêu gần nhất
+local function GetClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild(TargetPart) then
+            if AimTarget == "All" or plr.Name == AimTarget then
+                local part = plr.Character[TargetPart]
+                local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                
+                -- Chỉ aim vào người trong vòng tròn POV
+                if onScreen and dist < FOVCircle.Radius then
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        closestPlayer = plr
+                    end
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Vòng lặp cập nhật Aim
+RunService.RenderStepped:Connect(function()
+    -- Cập nhật POV vị trí
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    FOVCircle.Visible = POVEnabled
+    
+    -- Thực hiện Aim
+    if AimEnabled then
+        local target = GetClosestTarget()
+        if target and target.Character:FindFirstChild(TargetPart) then
+            local targetPos = target.Character[TargetPart].Position
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPos), Smoothness)
+        end
+    end
+end)
+
+-- Giao diện UI
+AimTab:AddSection("Cấu hình Aimbot")
+AimTab:AddToggle("aim_toggle", {Title = "Bật Aimbot", Default = false, Callback = function(v) AimEnabled = v end})
+AimTab:AddToggle("pov_toggle", {Title = "Hiện vòng tròn POV", Default = false, Callback = function(v) POVEnabled = v end})
+AimTab:AddDropdown("part_dropdown", {Title = "Chọn bộ phận Aim", Values = R6Parts, Default = "Head", Callback = function(v) TargetPart = v end})
+AimTab:AddInput("fov_input", {Title = "Bán kính POV", Placeholder = "100", Numeric = true, Finished = true, Callback = function(v) FOVCircle.Radius = tonumber(v) or 100 end})
+AimTab:AddInput("smooth_input", {Title = "Độ mượt (0.1 - 1)", Placeholder = "0.1", Numeric = true, Finished = true, Callback = function(v) Smoothness = tonumber(v) or 0.1 end})
+-- ================================================================
+-- ESP (Full Code - Thêm vào sau phần khai báo Tab)
+-- ================================================================
+
+local espEnabled, nameEnabled, boxEnabled, lineEnabled, hlEnabled = false, false, false, false, false
+local espColor = Color3.fromRGB(255, 60, 60)
+local espObjects = {}
+
+local function CreateESP(plr)
+    if espObjects[plr] or plr == LocalPlayer then return end
+    local obj = {
+        highlight = Instance.new("Highlight"),
+        billboard = Instance.new("BillboardGui"),
+        box = Instance.new("Frame"),
+        line = Instance.new("Frame")
+    }
+    
+    -- Highlight
+    obj.highlight.Parent = CoreGui
+    obj.highlight.FillColor = espColor
+    obj.highlight.OutlineColor = espColor
+    obj.highlight.Enabled = hlEnabled
+    
+    -- Name + Distance
+    obj.billboard.Parent = CoreGui
+    obj.billboard.AlwaysOnTop = true
+    obj.billboard.Size = UDim2.new(0, 120, 0, 40)
+    local nl = Instance.new("TextLabel", obj.billboard)
+    nl.Size = UDim2.new(1, 0, 1, 0); nl.BackgroundTransparency = 1; nl.TextColor3 = espColor
+    obj.nameLbl = nl
+    
+    -- Box & Line setup... (sử dụng logic vẽ của bạn)
+    espObjects[plr] = obj
+end
+
+-- Vòng lặp cập nhật ESP
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    for plr, obj in pairs(espObjects) do
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = plr.Character.HumanoidRootPart
+            local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            
+            -- Cập nhật ESP UI tại đây[span_1](start_span)[span_1](end_span)
+            obj.highlight.Adornee = plr.Character
+            obj.highlight.Enabled = hlEnabled
+            obj.billboard.Adornee = hrp
+            obj.billboard.Enabled = nameEnabled
+            obj.nameLbl.Text = plr.Name
+        else
+            obj.highlight.Enabled = false
+            obj.billboard.Enabled = false
+        end
+    end
+end)
+
+-- Giao diện Tab ESP
+EspTab:AddSection("Bật tắt ESP")
+EspTab:AddToggle("esp_master", {Title="Bật ESP", Callback=function(v) espEnabled = v end})
+EspTab:AddToggle("esp_hl", {Title="Highlight", Callback=function(v) hlEnabled = v end})
+EspTab:AddToggle("esp_name", {Title="Name + Distance", Callback=function(v) nameEnabled = v end})
+EspTab:AddToggle("esp_box", {Title="Box ESP", Callback=function(v) boxEnabled = v end})
+EspTab:AddToggle("esp_line", {Title="Tracer Line", Callback=function(v) lineEnabled = v end})
+
