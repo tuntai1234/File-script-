@@ -685,10 +685,8 @@ HitboxTab:AddButton({
         Fluent:Notify({Title="Đã làm mới", Content=#hbPlayers.." player trong danh sách", Duration=3})
     end
 })
-
-
 -- ================================================================
--- CẤU HÌNH BIẾN & POV CIRCLE
+-- KHỞI TẠO BIẾN AIMBOT & POV
 -- ================================================================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
@@ -704,25 +702,23 @@ local AimTarget = "All"
 local Smoothness = 0.1 
 
 -- ================================================================
--- HÀM TÌM MỤC TIÊU (ĐÃ LOẠI TRỪ BẢN THÂN)
+-- HÀM AIM (LOẠI TRỪ BẢN THÂN)
 -- ================================================================
 local function GetClosestTarget()
     local closestPlayer = nil
     local shortestDistance = math.huge
-    local myChar = game.Players.LocalPlayer.Character
     
     for _, plr in pairs(game.Players:GetPlayers()) do
-        -- Đảm bảo không aim vào bản thân[span_2](start_span)[span_2](end_span)
+        -- Đảm bảo không aim vào bản thân[span_1](start_span)[span_1](end_span)
         if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
             
-            -- Lọc theo lựa chọn "All" hoặc tên người chơi[span_3](start_span)[span_3](end_span)
             if AimTarget == "All" or plr.Name == AimTarget then
                 local headPos = plr.Character.Head.Position
                 local screenPos, onScreen = game.Workspace.CurrentCamera:WorldToViewportPoint(headPos)
                 
                 local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(game.Workspace.CurrentCamera.ViewportSize.X/2, game.Workspace.CurrentCamera.ViewportSize.Y/2)).Magnitude
                 
-                -- Chỉ aim nếu nằm trong bán kính vòng tròn FOV[span_4](start_span)[span_4](end_span)
+                -- Aim theo bán kính POV[span_2](start_span)[span_2](end_span)
                 if onScreen and dist < FOVCircle.Radius then
                     if dist < shortestDistance then
                         shortestDistance = dist
@@ -736,46 +732,57 @@ local function GetClosestTarget()
 end
 
 -- ================================================================
--- LOGIC RENDERSTEPPED (AIM & POV)
+-- VÒNG LẶP RENDERSTEPPED (CẬP NHẬT POV & AIM)
 -- ================================================================
 game:GetService("RunService").RenderStepped:Connect(function()
-    -- Cập nhật vị trí vòng tròn[span_5](start_span)[span_5](end_span)
     if POVEnabled then
         local cam = workspace.CurrentCamera
-        FOVCircle.Position = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
-        FOVCircle.Visible = true
+        if cam then
+            FOVCircle.Position = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
+            FOVCircle.Visible = true
+        end
     else
         FOVCircle.Visible = false
     end
 
-    -- Logic Aim[span_6](start_span)[span_6](end_span)
     if AimEnabled then
         local target = GetClosestTarget()
         if target and target.Character:FindFirstChild("Head") then
-            local targetPos = target.Character.Head.Position
             local camera = game.Workspace.CurrentCamera
-            local lookAt = CFrame.new(camera.CFrame.Position, targetPos)
+            local lookAt = CFrame.new(camera.CFrame.Position, target.Character.Head.Position)
             camera.CFrame = camera.CFrame:Lerp(lookAt, Smoothness)
         end
     end
 end)
 
 -- ================================================================
--- TẠO GIAO DIỆN TRONG TAB AIM BOT
+-- TẠO GIAO DIỆN TAB AIM BOT
 -- ================================================================
 local AimTab = Window:AddTab({ Title = "Aim bot", Icon = "target" })
 
 AimTab:AddToggle("aim_toggle", { Title = "Bật Aimbot", Default = false, Callback = function(val) AimEnabled = val end })
 AimTab:AddToggle("pov_circle_toggle", { Title = "Hiện vòng tròn POV", Default = false, Callback = function(val) POVEnabled = val end })
 
-AimTab:AddSlider("fov_radius", {
-    Title = "Đường kính vòng tròn", Default = 100, Min = 20, Max = 500, Rounding = 0,
-    Callback = function(val) FOVCircle.Radius = val end
+AimTab:AddInput("fov_radius_input", {
+    Title = "Đường kính vòng tròn",
+    Placeholder = "Nhập số (Ví dụ: 100)",
+    Numeric = true,
+    Finished = true,
+    Callback = function(val)
+        local n = tonumber(val)
+        if n then FOVCircle.Radius = n end
+    end
 })
 
-AimTab:AddSlider("aim_smooth", {
-    Title = "Độ mượt (Smoothing)", Default = 10, Min = 1, Max = 100, Rounding = 0,
-    Callback = function(val) Smoothness = val / 100 end
+AimTab:AddInput("aim_smooth_input", {
+    Title = "Độ mượt (0.01 đến 1.0)",
+    Placeholder = "Nhập số (Ví dụ: 0.1)",
+    Numeric = true,
+    Finished = true,
+    Callback = function(val)
+        local n = tonumber(val)
+        if n then Smoothness = n end
+    end
 })
 
 local PlrDropdown = AimTab:AddDropdown("aim_dropdown", {
